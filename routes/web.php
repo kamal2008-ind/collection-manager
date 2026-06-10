@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Workspace\Index as WorkspaceIndex;
+use App\Livewire\Workspace\Create as WorkspaceCreate;
+use App\Livewire\Workspace\Show as WorkspaceShow;
 
 Route::view('/', 'welcome');
 
@@ -12,4 +15,15 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-require __DIR__.'/auth.php';
+Route::get('/u/{username}/workspaces/{slug}', WorkspaceShow::class)
+    ->name('workspaces.show');
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/workspaces', WorkspaceIndex::class)
+        ->name('workspaces.index');
+
+    Route::get('/workspaces/create', WorkspaceCreate::class)
+        ->name('workspaces.create');
+});
+
+require __DIR__ . '/auth.php';

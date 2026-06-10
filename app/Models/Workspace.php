@@ -18,6 +18,7 @@ class Workspace extends Model
         'description',
         'image',
         'visibility',
+        'is_favorite',
     ];
 
     public function user(): BelongsTo
