@@ -6,13 +6,17 @@
         {{ in_array($workspace->id, $selected ?? []) ? 'border-blue-500 ring-2 ring-blue-200' : 'border' }}
         bg-white
     ">
-
+    @php
+        $isOwner = auth()->id() === $workspace->user_id;
+        $workspaceUrl = url('/u/' . $workspace->user->username . '/workspaces/' . $workspace->slug);
+    @endphp
     {{-- Header --}}
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
-            <input type="checkbox" value="{{ $workspace->id }}" wire:model.live="selected"
-                class="rounded border-gray-400" />
-
+            @if ($isOwner)
+                <input type="checkbox" value="{{ $workspace->id }}" wire:model.live="selected"
+                    class="rounded border-gray-400" />
+            @endif
             <span title="{{ $workspace->name }}"
                 class="truncate max-w-[180px] font-medium hover:shadow-md hover:border-gray-300 transition">
                 {{ $workspace->name }}
@@ -20,23 +24,67 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <button title="{{ $workspace->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
-                wire:click="toggleFavorite({{ $workspace->id }})">
-                @if ($workspace->is_favorite)
-                    ⭐
-                @else
-                    <span class="text-2xl">☆</span>
-                @endif
-            </button>
-            <button title="Edit" wire:click="editWorkspace({{ $workspace->id }})">
-                ✏️
-            </button>
-            <button title="Move to trash" wire:click="confirmDelete({{ $workspace->id }})">
-                🗑️
-            </button>
-            <button title="More...">
-                ⋮
-            </button>
+            @if ($isOwner)
+                <button title="{{ $workspace->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
+                    wire:click="toggleFavorite({{ $workspace->id }})">
+                    @if ($workspace->is_favorite)
+                        ⭐
+                    @else
+                        <span class="text-2xl">☆</span>
+                    @endif
+                </button>
+                <button title="Edit" wire:click="editWorkspace({{ $workspace->id }})">
+                    ✏️
+                </button>
+                <button title="Move to trash" wire:click="confirmDelete({{ $workspace->id }})">
+                    🗑️
+                </button>
+                <div class="relative">
+                    <button type="button"
+                        @click.stop="activeMenu = activeMenu === 'workspace-{{ $workspace->id }}' ? null : 'workspace-{{ $workspace->id }}'"
+                        class="rounded p-1 hover:bg-gray-100" title="More actions">
+                        ⋮
+                    </button>
+
+                    <div x-show="activeMenu === 'workspace-{{ $workspace->id }}'" @click.outside="activeMenu = null"
+                        x-transition
+                        class="absolute right-0 z-[9999] mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
+
+                        {{-- Duplicate --}}
+                        <button type="button" wire:click="duplicateWorkspace({{ $workspace->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>📋</span>
+                            <span>Duplicate</span>
+                        </button>
+
+                        {{-- Copy Link --}}
+                        <button type="button" wire:click="copyWorkspaceUrl({{ $workspace->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>🔗</span>
+                            <span>Copy link</span>
+                        </button>
+
+                        {{-- Statistics --}}
+                        <button type="button" wire:click="workspaceStatistics({{ $workspace->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>📊</span>
+                            <span>Statistics</span>
+                        </button>
+
+                        {{-- Settings --}}
+                        <button type="button" wire:click="workspaceSettings({{ $workspace->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>⚙️</span>
+                            <span>Settings</span>
+                        </button>
+
+                    </div>
+                </div>
+            @else
+                <span class="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                    View only
+                </span>
+            @endif
         </div>
     </div>
 
@@ -57,22 +105,35 @@
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
             @if ($workspace->visibility === 'public')
-                🌍 Public
+                🌍 <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-700">Public</span>
+            @elseif (($workspace->shares_count ?? 0) > 0)
+                👥 <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">Shared</span>
             @else
-                🔒 Private
+                🔒 <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">Private</span>
             @endif
         </div>
 
         <div class="flex gap-4">
-            <span>
-                👍 0
+            <span title="Likes">
+                ❤️ 0
             </span>
-            <button
-                title="{{ $workspace->visibility === 'public' ? 'Copy Share Link' : 'Make workspace public to share' }}"
-                @if ($workspace->visibility === 'public') wire:click="copyShareLink({{ $workspace->id }})" @endif
-                class="{{ $workspace->visibility === 'public' ? '' : 'opacity-40 cursor-not-allowed' }}">
-                ↗
-            </button>
+            @if ($workspace->visibility === 'public')
+                <button type="button" title="Copy Link" wire:click="copyShareLink({{ $workspace->id }})">
+                    🔗
+                </button>
+            @elseif($isOwner)
+                <button type="button" title="Share privately with user(s)"
+                    wire:click="openShareDrawer({{ $workspace->id }})">
+                    🤝 {{ $workspace->shares_count }}
+                </button>
+            @else
+                <span title="Shared count">
+                    🤝 {{ $workspace->shares_count ?? 0 }}
+                </span>
+            @endif
+            <a href="{{ $workspaceUrl }}" target="_blank" title="Open link">
+                ↗️
+            </a>
         </div>
     </div>
 </div>

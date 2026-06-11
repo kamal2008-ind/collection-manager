@@ -6,6 +6,8 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Services\WorkspaceService;
 use Livewire\WithFileUploads;
+use App\Models\Workspace;
+use App\Services\WorkspaceShareService;
 
 class Index extends Component
 {
@@ -40,14 +42,28 @@ class Index extends Component
             'image' => ['nullable', 'image', 'max:2048'],
         ];
     }
+
     protected WorkspaceService $workspaceService;
+    protected WorkspaceShareService $workspaceShareService;
+    public bool $shareDrawerOpen = false;
+    public ?Workspace $sharingWorkspace = null;
+    public string $shareSearch = '';
+    public ?int $sharingWorkspaceId = null;
+    public array $shareSearchResults = [];
+    public array $sharedUsers = [];
 
     public function boot(
-        WorkspaceService $workspaceService
+        WorkspaceService $workspaceService,
+        WorkspaceShareService $workspaceShareService
     ): void {
         $this->workspaceService = $workspaceService;
+        $this->workspaceShareService = $workspaceShareService;
     }
-
+    public function mount(): void
+    {
+        $this->shareSearchResults = [];
+        $this->sharedUsers = [];
+    }
     public function updatedSearch(): void
     {
         $this->selected = [];
@@ -127,6 +143,8 @@ class Index extends Component
     public function editWorkspace(
         int $workspaceId
     ): void {
+        $this->abortIfNotOwner($workspaceId);
+
         $workspace = $this->workspaceService
             ->findById($workspaceId);
 
@@ -156,6 +174,8 @@ class Index extends Component
     }
     public function confirmDelete(int $workspaceId): void
     {
+        $this->abortIfNotOwner($workspaceId);
+
         $workspace = $this->workspaceService
             ->findById($workspaceId);
 
@@ -186,6 +206,8 @@ class Index extends Component
     }
     public function toggleFavorite(int $workspaceId): void
     {
+        $this->abortIfNotOwner($workspaceId);
+
         $this->workspaceService
             ->toggleFavorite($workspaceId);
     }
@@ -237,6 +259,153 @@ class Index extends Component
         $this->dispatch('copy-to-clipboard', text: $url);
 
         session()->flash('success', 'Workspace share link copied.');
+    }
+
+    public function openShareDrawer(int $workspaceId): void
+    {
+        $this->sharingWorkspace = $this->abortIfNotOwner($workspaceId);
+
+        $this->sharingWorkspace = Workspace::findOrFail($workspaceId);
+
+        abort_if($this->sharingWorkspace->user_id !== auth()->id(), 403);
+
+        $this->shareDrawerOpen = true;
+        $this->shareSearch = '';
+
+        $this->loadSharedUsers();
+        $this->shareSearchResults = [];
+    }
+
+    public function updatedShareSearch(): void
+    {
+        if (! $this->sharingWorkspace) {
+            return;
+        }
+
+        $this->shareSearchResults = $this->workspaceShareService
+            ->searchUsers($this->sharingWorkspace, $this->shareSearch)
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    public function shareWithUser(int $userId): void
+    {
+        if (! $this->sharingWorkspace) {
+            return;
+        }
+
+        $this->workspaceShareService->shareWithUser(
+            $this->sharingWorkspace,
+            $userId
+        );
+
+        $this->shareSearch = '';
+        $this->shareSearchResults = [];
+
+        $this->loadSharedUsers();
+
+        session()->flash('success', 'Workspace shared successfully.');
+    }
+
+    public function removeSharedUser(int $userId): void
+    {
+        if (! $this->sharingWorkspace) {
+            return;
+        }
+
+        $this->workspaceShareService->removeShare(
+            $this->sharingWorkspace,
+            $userId
+        );
+
+        $this->loadSharedUsers();
+
+        session()->flash('success', 'Workspace share removed.');
+    }
+
+    public function closeShareDrawer(): void
+    {
+        $this->shareDrawerOpen = false;
+        $this->sharingWorkspace = null;
+        $this->shareSearch = '';
+        $this->shareSearchResults = [];
+        $this->sharedUsers = [];
+    }
+
+    private function loadSharedUsers(): void
+    {
+        if (! $this->sharingWorkspace) {
+            $this->sharedUsers = [];
+            return;
+        }
+
+        $this->sharedUsers = $this->workspaceShareService
+            ->getSharedUsers($this->sharingWorkspace)
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    private function abortIfNotOwner(int $workspaceId): Workspace
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+
+        abort_if($workspace->user_id !== auth()->id(), 403);
+
+        return $workspace;
+    }
+    public function duplicateWorkspace(int $workspaceId): void
+    {
+        session()->flash(
+            'success',
+            'Duplicate workspace feature coming soon.'
+        );
+    }
+
+    public function copyWorkspaceUrl(int $workspaceId): void
+    {
+        $workspace = $this->workspaceService->findById($workspaceId);
+
+        $url = url(
+            '/u/' .
+                $workspace->user->username .
+                '/workspaces/' .
+                $workspace->slug
+        );
+
+        $this->dispatch('copy-to-clipboard', text: $url);
+
+        session()->flash(
+            'success',
+            'Workspace link copied.'
+        );
+    }
+
+    public function workspaceStatistics(int $workspaceId): void
+    {
+        session()->flash(
+            'success',
+            'Workspace statistics coming soon.'
+        );
+    }
+
+    public function workspaceSettings(int $workspaceId): void
+    {
+        session()->flash(
+            'success',
+            'Workspace settings coming soon.'
+        );
     }
     public function render()
     {

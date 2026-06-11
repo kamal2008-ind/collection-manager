@@ -59,7 +59,13 @@ class WorkspaceRepository
         string $filter = 'recent'
     ) {
         $query = Workspace::query()
-            ->where('user_id', $userId)
+            ->withCount(['collections', 'shares'])
+            ->where(function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->orWhereHas('shares', function ($shareQuery) use ($userId) {
+                        $shareQuery->where('shared_with_user_id', $userId);
+                    });
+            })
             ->when(
                 $search,
                 fn($query) =>

@@ -8,6 +8,6 @@ class Create extends Component
 {
     public function render()
     {
-        return view('livewire.workspace.create');
+        return view('livewire.workspace.create')->layout('layouts.app');;
     }
 }

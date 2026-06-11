@@ -19,7 +19,7 @@ class Show extends Component
             ->where('slug', $slug)
             ->firstOrFail();
 
-        if ($workspace->visibility !== 'public' && auth()->id() !== $workspace->user_id)
+        if (! $workspace->canBeViewedBy(auth()->user()))
         {
             $this->workspace = $workspace;
             $this->isPrivateBlocked = true;

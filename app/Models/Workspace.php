@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Workspace extends Model
 {
@@ -38,5 +40,52 @@ class Workspace extends Model
             'container_type',
             'container_id'
         );
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(WorkspaceShare::class);
+    }
+
+    public function sharedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'workspace_shares',
+            'workspace_id',
+            'shared_with_user_id'
+        )
+            ->withPivot(['shared_by_user_id', 'permission', 'last_accessed_at'])
+            ->withTimestamps();
+    }
+
+    public function isSharedWith(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->shares()
+            ->where('shared_with_user_id', $user->id)
+            ->exists();
+    }
+
+    public function canBeViewedBy(?User $user): bool
+    {
+        if ($this->visibility === 'public') {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        return $this->shares()
+            ->where('shared_with_user_id', $user->id)
+            ->exists();
     }
 }

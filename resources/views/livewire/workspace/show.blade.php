@@ -58,9 +58,17 @@
                     </div>
 
                     <div>
+                        @php
+                            $isOwner = auth()->id() === $workspace->user_id;
+                            $isSharedWithMe = auth()->check() && !$isOwner && $workspace->isSharedWith(auth()->user());
+                        @endphp
                         @if ($workspace->visibility === 'public')
                             <span class="rounded-full bg-green-100 px-3 py-1 text-sm text-green-700">
                                 Public
+                            </span>
+                        @elseif ($isSharedWithMe)
+                            <span class="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700">
+                                Shared with me
                             </span>
                         @else
                             <span class="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">

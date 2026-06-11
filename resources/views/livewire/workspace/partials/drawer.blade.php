@@ -32,7 +32,7 @@
                         Workspace Name *
                     </label>
 
-                    <input type="text" wire:model="name" class="w-full rounded-lg border px-3 py-2">
+                    <input type="text" wire:model="name" class="w-full rounded-lg border border-gray-400 px-3 py-2 text-base focus:border-blue-600 focus:ring-blue-600">
 
                     @error('name')
                         <p class="text-red-500 text-sm mt-1">
@@ -49,7 +49,7 @@
                         Description
                     </label>
 
-                    <textarea wire:model="description" rows="4" class="w-full rounded-lg border px-3 py-2"></textarea>
+                    <textarea wire:model="description" rows="4" class="w-full rounded-lg border border-gray-400 px-3 py-2 text-base focus:border-blue-600 focus:ring-blue-600"></textarea>
 
                 </div>
 
