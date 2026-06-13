@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Workspace\Index as WorkspaceIndex;
-use App\Livewire\Workspace\Create as WorkspaceCreate;
 use App\Livewire\Workspace\Show as WorkspaceShow;
 
 Route::view('/', 'welcome');
@@ -21,9 +20,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/workspaces', WorkspaceIndex::class)
         ->name('workspaces.index');
-
-    Route::get('/workspaces/create', WorkspaceCreate::class)
-        ->name('workspaces.create');
 });
 
 require __DIR__ . '/auth.php';

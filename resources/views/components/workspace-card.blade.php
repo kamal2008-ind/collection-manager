@@ -111,9 +111,13 @@
             @else
                 🔒 <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">Private</span>
             @endif
+            <span class="text-xs text-gray-500">
+                👤
+                {{ $workspace->user_id === auth()->id() ? 'Me' : '@' . $workspace->user->username }}
+            </span>
         </div>
 
-        <div class="flex gap-4">
+        <div class="flex gap-2">
             <span title="Likes">
                 ❤️ 0
             </span>

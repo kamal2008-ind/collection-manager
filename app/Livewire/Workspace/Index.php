@@ -51,6 +51,7 @@ class Index extends Component
     public ?int $sharingWorkspaceId = null;
     public array $shareSearchResults = [];
     public array $sharedUsers = [];
+    public string $paginationMode = 'pages';
 
     public function boot(
         WorkspaceService $workspaceService,
@@ -214,6 +215,7 @@ class Index extends Component
     public function updatedFilter(): void
     {
         $this->selected = [];
+        $this->resetPage();
     }
     public function bulkFavorite(): void
     {
@@ -244,6 +246,7 @@ class Index extends Component
 
         $this->view = $view;
         $this->selected = [];
+        $this->resetPage();
     }
     public function copyShareLink(int $workspaceId): void
     {
@@ -264,14 +267,10 @@ class Index extends Component
     public function openShareDrawer(int $workspaceId): void
     {
         $this->sharingWorkspace = $this->abortIfNotOwner($workspaceId);
-
         $this->sharingWorkspace = Workspace::findOrFail($workspaceId);
-
         abort_if($this->sharingWorkspace->user_id !== auth()->id(), 403);
-
         $this->shareDrawerOpen = true;
         $this->shareSearch = '';
-
         $this->loadSharedUsers();
         $this->shareSearchResults = [];
     }
@@ -356,7 +355,6 @@ class Index extends Component
             ->values()
             ->toArray();
     }
-
     private function abortIfNotOwner(int $workspaceId): Workspace
     {
         $workspace = Workspace::findOrFail($workspaceId);
@@ -399,13 +397,35 @@ class Index extends Component
             'Workspace statistics coming soon.'
         );
     }
-
     public function workspaceSettings(int $workspaceId): void
     {
         session()->flash(
             'success',
             'Workspace settings coming soon.'
         );
+    }
+    public function setPaginationMode(string $mode): void
+    {
+        if (! in_array($mode, ['pages', 'lazy'])) {
+            return;
+        }
+
+        $this->paginationMode = $mode;
+        $this->selected = [];
+        $this->resetPage();
+
+        if ($mode === 'pages') {
+            $this->perPage = 12;
+        }
+
+        if ($mode === 'lazy') {
+            $this->perPage = 12;
+        }
+    }
+
+    public function loadMore(): void
+    {
+        $this->perPage += 12;
     }
     public function render()
     {

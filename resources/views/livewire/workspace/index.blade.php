@@ -7,12 +7,11 @@
 
     {{-- Page Header --}}
     <div class="flex items-center justify-between">
-
         <h1 class="text-2xl font-bold">
             Workspaces
         </h1>
-        <x-ui.button variant="primary" wire:click="openDrawer">
 
+        <x-ui.button variant="primary" wire:click="openDrawer">
             + New Workspace
         </x-ui.button>
     </div>
@@ -44,19 +43,41 @@
             </x-ui.badge>
         </div>
 
-        <div class="flex gap-2">
-            <button title="Table" wire:click="setView('table')"
-                class="text-xl {{ $view === 'table' ? 'text-blue-600 font-bold' : 'text-gray-600' }}">
-                ☰
-            </button>
-            <button title="Card" wire:click="setView('card')"
-                class="text-xl {{ $view === 'card' ? 'text-blue-600 font-bold' : 'text-gray-600' }}">
-                ▣
-            </button>
-            <button title="Masonry" wire:click="setView('masonry')"
-                class="text-xl {{ $view === 'masonry' ? 'text-blue-600 font-bold' : 'text-gray-600' }}">
-                ▦
-            </button>
+        <div class="flex items-center gap-6">
+            {{-- Pagination control --}}
+            <div title="Pagination mode" class="flex items-center gap-2 rounded-lg border bg-white p-1">
+                <div class="flex gap-2">
+                    <button title="Page pagination" wire:click="setPaginationMode('pages')"
+                        class="rounded-md px-1 text-md {{ $paginationMode === 'pages' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-700' }}">
+                        📄
+                    </button>
+
+                    <button title="Infinite scroll" wire:click="setPaginationMode('lazy')"
+                        class="rounded-md px-1 text-md {{ $paginationMode === 'lazy' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-700' }}">
+                        ♾️
+                    </button>
+                </div>
+            </div>
+            <div class="h-5 w-px bg-blue-300"></div>
+            {{-- View control --}}
+            <div title="View mode" class="flex items-center gap-2 rounded-lg border bg-white p-1">
+                <div class="flex gap-2">
+                    <button title="Table view" wire:click="setView('table')"
+                        class="rounded-md px-1 text-md {{ $view === 'table' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-700' }}">
+                        ☰
+                    </button>
+
+                    <button title="Card view" wire:click="setView('card')"
+                        class="rounded-md px-1 text-md {{ $view === 'card' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-700' }}">
+                        ▣
+                    </button>
+
+                    <button title="Masonry view" wire:click="setView('masonry')"
+                        class="rounded-md px-1 text-md {{ $view === 'masonry' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-700' }}">
+                        ▦
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     @if (count($selected))
@@ -86,244 +107,36 @@
         </div>
     @endif
     {{-- Workspace Cards --}}
-    {{-- <div class="grid gap-4 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
-
-        @forelse($workspaces as $workspace)
-            <div wire:key="workspace-{{ $workspace->id }}"
-                class="shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                <x-workspace-card :workspace="$workspace" :selected="$selected" />
-            </div>
-
-        @empty
-
-            <div>
-                No workspaces found.
-            </div>
-        @endforelse
-
-    </div> --}}
-
     @if ($view === 'table')
-
-        <div class="relative rounded-xl border bg-white overflow-visible">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="p-3 text-left"></th>
-
-                        <th class="p-3 text-left w-[35%]">
-                            Workspace
-                        </th>
-
-                        <th class="p-3 text-center w-[10%]">
-                            Collections
-                        </th>
-
-                        <th class="p-3 text-center w-[10%]">
-                            Movies
-                        </th>
-
-                        <th class="p-3 text-center w-[10%]">
-                            Books
-                        </th>
-
-                        <th class="p-3 text-center w-[15%]">
-                            Status
-                        </th>
-
-                        <th class="p-3 text-right w-[15%]">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @forelse($workspaces as $workspace)
-                        @php
-                            $isOwner = auth()->id() === $workspace->user_id;
-                            $workspaceUrl = url('/u/' . $workspace->user->username . '/workspaces/' . $workspace->slug);
-                        @endphp
-
-                        <tr wire:key="workspace-table-{{ $workspace->id }}" class="border-t hover:bg-gray-50">
-
-                            {{-- Select --}}
-                            <td class="p-3">
-                                @if ($isOwner)
-                                    <input type="checkbox" value="{{ $workspace->id }}" wire:model.live="selected">
-                                @endif
-                            </td>
-
-                            {{-- Workspace --}}
-                            <td class="p-3 font-medium">
-                                {{ $workspace->name }}
-                            </td>
-
-                            {{-- Collections --}}
-                            <td class="p-3 text-center">
-                                0
-                            </td>
-
-                            {{-- Movies --}}
-                            <td class="p-3 text-center">
-                                0
-                            </td>
-
-                            {{-- Books --}}
-                            <td class="p-3 text-center">
-                                0
-                            </td>
-
-                            {{-- Status --}}
-                            <td class="p-3">
-                                <div class="flex items-center justify-center gap-3">
-
-                                    @if ($workspace->visibility === 'public')
-                                        <span title="Public"> 🌍 </span>
-                                    @elseif (($workspace->shares_count ?? 0) > 0)
-                                        <span title="Shared"> 👥 </span>
-                                    @else
-                                        <span title="Private"> 🔒 </span>
-                                    @endif
-
-                                    <span title="Likes">
-                                        ❤️ 0
-                                    </span>
-
-                                    @if ($workspace->visibility === 'public')
-                                        <button type="button" title="Copy link"
-                                            wire:click="copyShareLink({{ $workspace->id }})">
-                                            🔗
-                                        </button>
-                                    @elseif($isOwner)
-                                        <button type="button" title="Share privately with user(s)"
-                                            wire:click="openShareDrawer({{ $workspace->id }})">
-                                            🤝 {{ $workspace->shares_count }}
-                                        </button>
-                                    @else
-                                        <span title="Shared count">
-                                            🤝 {{ $workspace->shares_count ?? 0 }}
-                                        </span>
-                                    @endif
-                                    <a href="{{ $workspaceUrl }}" target="_blank" title="Open link">
-                                        ↗️
-                                    </a>
-                                </div>
-                            </td>
-
-                            {{-- Actions --}}
-                            <td class="p-3">
-                                <div class="flex justify-end items-center gap-3">
-                                    @if ($isOwner)
-                                        <button
-                                            title="{{ $workspace->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
-                                            wire:click="toggleFavorite({{ $workspace->id }})">
-                                            @if ($workspace->is_favorite)
-                                                ⭐
-                                            @else
-                                                <span class="text-2xl">☆</span>
-                                            @endif
-                                        </button>
-                                        <button title="Edit" wire:click="editWorkspace({{ $workspace->id }})">
-                                            ✏️
-                                        </button>
-                                        <button title="Move to Trash" wire:click="confirmDelete({{ $workspace->id }})">
-                                            🗑️
-                                        </button>
-                                        <div class="relative">
-                                            <button
-                                                @click.stop="activeMenu = activeMenu === {{ $workspace->id }} ? null : {{ $workspace->id }}"
-                                                class="rounded
-                                                p-1 hover:bg-gray-100"
-                                                title="More actions">
-                                                ⋮
-                                            </button>
-
-                                            <div x-show="activeMenu === {{ $workspace->id }}"
-                                                @click.outside="activeMenu = null" x-transition
-                                                class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
-
-                                                {{-- Duplicate --}}
-                                                <button type="button"
-                                                    wire:click="duplicateWorkspace({{ $workspace->id }})"
-                                                    class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                                    <span>📋</span>
-                                                    <span>Duplicate</span>
-                                                </button>
-
-                                                {{-- Copy Link --}}
-                                                <button type="button"
-                                                    wire:click="copyWorkspaceUrl({{ $workspace->id }})"
-                                                    class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                                    <span>🔗</span>
-                                                    <span>Copy link</span>
-                                                </button>
-
-                                                {{-- Statistics --}}
-                                                <button type="button"
-                                                    wire:click="workspaceStatistics({{ $workspace->id }})"
-                                                    class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                                    <span>📊</span>
-                                                    <span>Statistics</span>
-                                                </button>
-
-                                                {{-- Settings --}}
-                                                <button type="button"
-                                                    wire:click="workspaceSettings({{ $workspace->id }})"
-                                                    class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                                    <span>⚙️</span>
-                                                    <span>Settings</span>
-                                                </button>
-
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span class="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
-                                            View only
-                                        </span>
-                                    @endif
-                                </div>
-                            </td>
-
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="p-6 text-center">
-                                No workspaces found.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        @include('livewire.workspace.partials.table-view')
     @elseif($view === 'masonry')
-        <div class="columns-1 md:columns-2 xl:columns-3 gap-4 space-y-4">
-            @forelse($workspaces as $workspace)
-                <div wire:key="workspace-masonry-{{ $workspace->id }}"
-                    class="break-inside-avoid mb-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <x-workspace-card :workspace="$workspace" :selected="$selected" />
-                </div>
-            @empty
-                <div>No workspaces found.</div>
-            @endforelse
-        </div>
+        @include('livewire.workspace.partials.masonry-view')
     @else
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-            @forelse($workspaces as $workspace)
-                <div wire:key="workspace-card-{{ $workspace->id }}"
-                    class="shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <x-workspace-card :workspace="$workspace" :selected="$selected" />
-                </div>
-            @empty
-                <div>No workspaces found.</div>
-            @endforelse
-        </div>
-
+        @include('livewire.workspace.partials.card-view')
     @endif
     {{-- Pagination --}}
     <div>
+        @if ($paginationMode === 'pages')
+            {{ $workspaces->links() }}
+        @else
+            @if ($workspaces->hasMorePages())
+                <div x-data x-intersect="$wire.loadMore()" class="flex justify-center py-6">
+                    <div wire:loading wire:target="loadMore" class="flex items-center gap-2 text-sm text-gray-500">
+                        <span
+                            class="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></span>
+                        Loading more workspaces...
+                    </div>
 
-        {{ $workspaces->links() }}
-
+                    <div wire:loading.remove wire:target="loadMore" class="text-sm text-gray-400">
+                        Scroll to load more
+                    </div>
+                </div>
+            @else
+                <div class="py-6 text-center text-sm text-gray-500">
+                    No more workspaces.
+                </div>
+            @endif
+        @endif
     </div>
     @include('livewire.workspace.partials.drawer')
     @include('livewire.workspace.partials.delete-modal')
