@@ -1,9 +1,9 @@
 <div class="p-6 space-y-6" x-data="{ activeMenu: null }">
-    @if (session('success'))
+    {{-- @if (session('success'))
         <div class="rounded-lg bg-green-100 p-3 text-green-700">
             {{ session('success') }}
         </div>
-    @endif
+    @endif --}}
 
     {{-- Page Header --}}
     <div class="flex items-center justify-between">
@@ -18,10 +18,7 @@
 
     {{-- Search --}}
     <div>
-
-        <input type="text" wire:model.live.debounce.500ms="search" placeholder="Search Workspaces..."
-            class="w-full rounded-lg border border-gray-400 px-4 py-2 text-base focus:border-blue-600 focus:ring-blue-600">
-
+        <x-ui.search-input model="search" placeholder="Search Workspaces..." />
     </div>
 
     {{-- Filters + View Switcher --}}

@@ -8,6 +8,7 @@ use App\Services\WorkspaceService;
 use Livewire\WithFileUploads;
 use App\Models\Workspace;
 use App\Services\WorkspaceShareService;
+use SebastianBergmann\Timer\Duration;
 
 class Index extends Component
 {
@@ -133,12 +134,17 @@ class Index extends Component
 
         $this->closeDrawer();
 
-        session()->flash(
-            'success',
-            $this->drawerMode === 'create'
-                ? 'Workspace created successfully.'
-                : 'Workspace updated successfully.'
-        );
+        // session()->flash(
+        //     'success',
+        //     $this->drawerMode === 'create'
+        //         ? 'Workspace created successfully.'
+        //         : 'Workspace updated successfully.'
+        // );
+        if ($this->drawerMode === 'create') {
+            $this->dispatch('toast', message: 'Workspace created successfully.', type: 'success');
+        } else {
+            $this->dispatch('toast', message: 'Workspace updated successfully.', type: 'success');
+        }
     }
 
     public function editWorkspace(
@@ -200,10 +206,8 @@ class Index extends Component
         $this->deleteWorkspaceId = null;
         $this->deleteWorkspaceName = null;
 
-        session()->flash(
-            'success',
-            $deleteWorkspaceMessage
-        );
+        // session()->flash('success',$deleteWorkspaceMessage);
+        $this->dispatch('toast', message: $deleteWorkspaceMessage, type: 'success');
     }
     public function toggleFavorite(int $workspaceId): void
     {
@@ -225,7 +229,8 @@ class Index extends Component
 
         $this->workspaceService->bulkFavorite($this->selected);
         $this->selected = [];
-        session()->flash('success', 'Selected workspaces marked as favorite.');
+        // session()->flash('success', 'Selected workspaces marked as favorite.');
+        $this->dispatch('toast', message: 'Selected workspaces marked as favorite.', type: 'success');
     }
 
     public function confirmBulkDelete(): void
@@ -253,7 +258,8 @@ class Index extends Component
         $workspace = $this->workspaceService->findById($workspaceId);
 
         if ($workspace->visibility !== 'public') {
-            session()->flash('success', 'Make workspace public before sharing.');
+            // session()->flash('success', 'Make workspace public before sharing.');
+            $this->dispatch('toast', message: 'Make workspace public before sharing.', type: 'success');
             return;
         }
 
@@ -261,7 +267,8 @@ class Index extends Component
 
         $this->dispatch('copy-to-clipboard', text: $url);
 
-        session()->flash('success', 'Workspace share link copied.');
+        // session()->flash('success', 'Workspace share link copied.');
+        $this->dispatch('toast', message: 'Workspace share link copied.', type: 'success');
     }
 
     public function openShareDrawer(int $workspaceId): void
@@ -309,7 +316,8 @@ class Index extends Component
 
         $this->loadSharedUsers();
 
-        session()->flash('success', 'Workspace shared successfully.');
+        // session()->flash('success', 'Workspace shared successfully.');
+        $this->dispatch('toast', message: 'Workspace shared successfully.', type: 'success');
     }
 
     public function removeSharedUser(int $userId): void
@@ -325,7 +333,8 @@ class Index extends Component
 
         $this->loadSharedUsers();
 
-        session()->flash('success', 'Workspace share removed.');
+        // session()->flash('success', 'Workspace share removed.');
+        $this->dispatch('toast', message: 'Workspace share removed.', type: 'success');
     }
 
     public function closeShareDrawer(): void
@@ -365,10 +374,11 @@ class Index extends Component
     }
     public function duplicateWorkspace(int $workspaceId): void
     {
-        session()->flash(
-            'success',
-            'Duplicate workspace feature coming soon.'
-        );
+        // session()->flash(
+        //     'success',
+        //     'Duplicate workspace feature coming soon.'
+        // );
+        $this->dispatch('toast', message: 'Duplicate workspace feature coming soon.', type: 'info');
     }
 
     public function copyWorkspaceUrl(int $workspaceId): void
@@ -384,25 +394,19 @@ class Index extends Component
 
         $this->dispatch('copy-to-clipboard', text: $url);
 
-        session()->flash(
-            'success',
-            'Workspace link copied.'
-        );
+        // session()->flash('success', 'Workspace link copied.');
+        $this->dispatch('toast', message: 'Workspace link copied.', type: 'success');
     }
 
     public function workspaceStatistics(int $workspaceId): void
     {
-        session()->flash(
-            'success',
-            'Workspace statistics coming soon.'
-        );
+        // session()->flash('success', 'Workspace statistics coming soon.');
+        $this->dispatch('toast', message: 'Workspace statistics coming soon.', type: 'info');
     }
     public function workspaceSettings(int $workspaceId): void
     {
-        session()->flash(
-            'success',
-            'Workspace settings coming soon.'
-        );
+        // session()->flash('success', 'Workspace settings coming soon.');
+        $this->dispatch('toast', message: 'Workspace settings coming soon.', type: 'info');
     }
     public function setPaginationMode(string $mode): void
     {

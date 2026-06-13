@@ -77,7 +77,8 @@ class WorkspaceRepository
             );
 
         if ($filter === 'favorites') {
-            $query->where('is_favorite', true);
+            $query->where('user_id', $userId)
+                ->where('is_favorite', true);
         }
 
         return $query
