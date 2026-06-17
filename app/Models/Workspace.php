@@ -30,7 +30,10 @@ class Workspace extends Model
     public function collections()
     {
         return $this->attachments()
-            ->where('attachable_type', 'collection');
+            ->where('attachable_type', 'collection')
+            ->whereHas('attachable', function ($query) {
+                $query->whereNull('deleted_at');
+            });
     }
     public function attachments(): MorphMany
     {

@@ -42,7 +42,10 @@ class Collection extends Model
     {
         return $this->hasMany(Attachment::class, 'attachable_id')
             ->where('attachable_type', 'collection')
-            ->where('container_type', 'workspace');
+            ->where('container_type', 'workspace')
+            ->whereHas('container', function ($query) {
+                $query->whereNull('deleted_at');
+            });
     }
     public function shares(): HasMany
     {
