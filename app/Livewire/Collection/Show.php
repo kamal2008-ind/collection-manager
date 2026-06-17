@@ -1,38 +1,39 @@
 <?php
 
-namespace App\Livewire\Workspace;
+namespace App\Livewire\Collection;
 
+use App\Models\Collection;
 use App\Models\User;
 use Livewire\Component;
-use App\Models\Workspace;
 
 class Show extends Component
 {
-    public Workspace $workspace;
+    public Collection $collection;
     public bool $isPrivateBlocked = false;
+
     public function mount(string $username, string $slug): void
     {
         $user = User::where('username', $username)->firstOrFail();
 
-        $workspace = Workspace::query()
-            ->withCount(['collections as collections_count'])
+        $collection = Collection::query()
+            ->withCount(['attachedWorkspaces as workspaces_count'])
             ->where('user_id', $user->id)
             ->where('slug', $slug)
             ->firstOrFail();
 
-        if (! $workspace->canBeViewedBy(auth()->user())) {
-            $this->workspace = $workspace;
+        if (! $collection->canBeViewedBy(auth()->user())) {
+            $this->collection = $collection;
             $this->isPrivateBlocked = true;
 
             return;
         }
 
-        $this->workspace = $workspace;
+        $this->collection = $collection;
     }
 
     public function render()
     {
-        return view('livewire.workspace.show')
+        return view('livewire.collection.show')
             ->layout('layouts.app');
     }
 }

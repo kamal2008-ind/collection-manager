@@ -49,16 +49,16 @@ return new class extends Migration
 
         /*
             container_type:
-                Workspace
-                Collection
+                workspace
+                collection
 
             attachable_type:
-                Collection
-                Movie
-                Book
-                Music
-                Website
-                ShoppingAsset
+                collection
+                movie
+                book
+                music
+                website
+                shopping_asset
         */
     }
 

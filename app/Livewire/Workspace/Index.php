@@ -9,6 +9,8 @@ use Livewire\WithFileUploads;
 use App\Models\Workspace;
 use App\Services\WorkspaceShareService;
 use SebastianBergmann\Timer\Duration;
+use App\Models\Collection;
+use App\Services\AttachmentService;
 
 class Index extends Component
 {
@@ -33,7 +35,25 @@ class Index extends Component
     public ?string $deleteWorkspaceName = null;
     public array $selected = [];
     public ?string $deleteWorkspaceMessage = null;
+    public bool $shareDrawerOpen = false;
+    public ?Workspace $sharingWorkspace = null;
+    public string $shareSearch = '';
+    public ?int $sharingWorkspaceId = null;
+    public array $shareSearchResults = [];
+    public array $sharedUsers = [];
+    public string $paginationMode = 'pages';
+    public bool $addItemsDrawerOpen = false;
+    public ?int $addItemsWorkspaceId = null;
+    public ?string $addItemsWorkspaceName = null;
+    public string $addItemsType = 'collections';
+    public array $collectionOptions = [];
+    public array $addedCollectionIds = [];
+    public array $selectedCollectionIds = [];
+    public string $collectionSearch = '';
 
+    protected WorkspaceService $workspaceService;
+    protected WorkspaceShareService $workspaceShareService;
+    protected AttachmentService $attachmentService;
     protected function rules(): array
     {
         return [
@@ -43,23 +63,14 @@ class Index extends Component
             'image' => ['nullable', 'image', 'max:2048'],
         ];
     }
-
-    protected WorkspaceService $workspaceService;
-    protected WorkspaceShareService $workspaceShareService;
-    public bool $shareDrawerOpen = false;
-    public ?Workspace $sharingWorkspace = null;
-    public string $shareSearch = '';
-    public ?int $sharingWorkspaceId = null;
-    public array $shareSearchResults = [];
-    public array $sharedUsers = [];
-    public string $paginationMode = 'pages';
-
     public function boot(
         WorkspaceService $workspaceService,
-        WorkspaceShareService $workspaceShareService
+        WorkspaceShareService $workspaceShareService,
+        AttachmentService $attachmentService
     ): void {
         $this->workspaceService = $workspaceService;
         $this->workspaceShareService = $workspaceShareService;
+        $this->attachmentService = $attachmentService;
     }
     public function mount(): void
     {
@@ -430,6 +441,93 @@ class Index extends Component
     public function loadMore(): void
     {
         $this->perPage += 12;
+    }
+    public function openAddItemsDrawer(int $workspaceId): void
+    {
+        $workspace = $this->abortIfNotOwner($workspaceId);
+
+        $this->addItemsWorkspaceId = $workspace->id;
+        $this->addItemsWorkspaceName = $workspace->name;
+        $this->addItemsType = 'collections';
+
+        $this->collectionOptions = Collection::query()
+            ->where('user_id', auth()->id())
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->toArray();
+
+        $this->addedCollectionIds = \App\Models\Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $workspace->id)
+            ->where('attachable_type', 'collection')
+            ->pluck('attachable_id')
+            ->toArray();
+
+        $this->selectedCollectionIds = [];
+
+        $this->addItemsDrawerOpen = true;
+    }
+    public function closeAddItemsDrawer(): void
+    {
+        $this->addItemsDrawerOpen = false;
+        $this->addItemsWorkspaceId = null;
+        $this->addItemsWorkspaceName = null;
+        $this->addItemsType = 'collections';
+        $this->collectionOptions = [];
+        $this->addedCollectionIds = [];
+        $this->selectedCollectionIds = [];
+        $this->collectionSearch = '';
+    }
+
+    public function addSelectedItems(): void
+    {
+        if (! $this->addItemsWorkspaceId) {
+            return;
+        }
+
+        if ($this->addItemsType === 'collections' && empty($this->selectedCollectionIds)) {
+            $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
+            return;
+        }
+
+        foreach ($this->selectedCollectionIds as $collectionId) {
+            $this->attachmentService->attachCollectionToWorkspaces(
+                (int) $collectionId,
+                [$this->addItemsWorkspaceId]
+            );
+        }
+
+        $this->addedCollectionIds = \App\Models\Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $this->addItemsWorkspaceId)
+            ->where('attachable_type', 'collection')
+            ->pluck('attachable_id')
+            ->toArray();
+
+        $this->selectedCollectionIds = [];
+        $this->collectionSearch = '';
+        $this->dispatch('toast', message: 'Items added successfully.', type: 'success');
+    }
+
+    public function detachCollectionItem(int $collectionId): void
+    {
+        if (! $this->addItemsWorkspaceId) {
+            return;
+        }
+
+        $this->attachmentService->detachCollectionFromWorkspace(
+            $collectionId,
+            $this->addItemsWorkspaceId
+        );
+
+        $this->addedCollectionIds = \App\Models\Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $this->addItemsWorkspaceId)
+            ->where('attachable_type', 'collection')
+            ->pluck('attachable_id')
+            ->toArray();
+
+        $this->dispatch('toast', message: 'Collection detached from workspace.', type: 'success');
     }
     public function render()
     {

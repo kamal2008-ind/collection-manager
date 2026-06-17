@@ -1,81 +1,82 @@
+@props(['collection', 'selected' => []])
 <div
     class="
         rounded-xl
         p-4
         shadow-sm
-        {{ in_array($workspace->id, $selected ?? []) ? 'border-blue-500 ring-2 ring-blue-200' : 'border' }}
+        {{ in_array($collection->id, $selected ?? []) ? 'border-blue-500 ring-2 ring-blue-200' : 'border' }}
         bg-white
     ">
     @php
-        $isOwner = auth()->id() === $workspace->user_id;
-        $workspaceUrl = url('/u/' . $workspace->user->username . '/workspaces/' . $workspace->slug);
+        $isOwner = auth()->id() === $collection->user_id;
+        $collectionUrl = url('/u/' . $collection->user->username . '/collections/' . $collection->slug);
     @endphp
     {{-- Header --}}
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
             @if ($isOwner)
-                <input type="checkbox" value="{{ $workspace->id }}" wire:model.live="selected"
+                <input type="checkbox" value="{{ $collection->id }}" wire:model.live="selected"
                     class="rounded border-gray-400" />
             @endif
-            <span title="{{ $workspace->name }}"
+            <span title="{{ $collection->name }}"
                 class="truncate max-w-[180px] font-medium hover:shadow-md hover:border-gray-300 transition">
-                {{ $workspace->name }}
+                {{ $collection->name }}
             </span>
         </div>
 
         <div class="flex items-center gap-2">
             @if ($isOwner)
-                <button title="{{ $workspace->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
-                    wire:click="toggleFavorite({{ $workspace->id }})">
-                    @if ($workspace->is_favorite)
+                <button title="{{ $collection->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
+                    wire:click="toggleFavorite({{ $collection->id }})">
+                    @if ($collection->is_favorite)
                         ⭐
                     @else
                         <span class="text-2xl">☆</span>
                     @endif
                 </button>
-                <button title="Add Items" wire:click="openAddItemsDrawer({{ $workspace->id }})">
-                    ➕
+                <button title="Attach To" wire:click="openAttachToDrawer({{ $collection->id }})">
+                    📎
                 </button>
-                <button title="Edit" wire:click="editWorkspace({{ $workspace->id }})">
+                <button title="Edit" wire:click="editCollection({{ $collection->id }})">
                     ✏️
                 </button>
-                <button title="Move to trash" wire:click="confirmDelete({{ $workspace->id }})">
+                <button title="Move to trash" wire:click="confirmDelete({{ $collection->id }})">
                     🗑️
                 </button>
                 <div class="relative">
                     <button type="button"
-                        @click.stop="activeMenu = activeMenu === 'workspace-{{ $workspace->id }}' ? null : 'workspace-{{ $workspace->id }}'"
+                        @click.stop="activeMenu = activeMenu === 'collection-{{ $collection->id }}' ? null : 'collection-{{ $collection->id }}'"
                         class="rounded p-1 hover:bg-gray-100" title="More actions">
                         ⋮
                     </button>
 
-                    <div x-show="activeMenu === 'workspace-{{ $workspace->id }}'" @click.outside="activeMenu = null"
+                    <div x-show="activeMenu === 'collection-{{ $collection->id }}'" @click.outside="activeMenu = null"
                         x-transition
                         class="absolute right-0 z-[9999] mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
 
                         {{-- Duplicate --}}
-                        <button type="button" wire:click="duplicateWorkspace({{ $workspace->id }})"
+                        <button type="button" wire:click="duplicateCollection({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>📋</span>
                             <span>Duplicate</span>
                         </button>
 
                         {{-- Copy Link --}}
-                        <button type="button" wire:click="copyWorkspaceUrl({{ $workspace->id }})"
+                        <button type="button" wire:click="copyCollectionUrl({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>🔗</span>
                             <span>Copy link</span>
                         </button>
 
                         {{-- Statistics --}}
-                        <button type="button" wire:click="workspaceStatistics({{ $workspace->id }})"
+                        <button type="button" wire:click="collectionStatistics({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>📊</span>
                             <span>Statistics</span>
                         </button>
 
                         {{-- Settings --}}
-                        <button type="button" wire:click="workspaceSettings({{ $workspace->id }})"
+                        <button type="button" wire:click="collectionSettings({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>⚙️</span>
                             <span>Settings</span>
@@ -94,7 +95,7 @@
     {{-- Body --}}
     <div class="mt-4 space-y-2 text-sm">
         <div>
-            Collections ({{ $workspace->collections_count ?? 0 }})
+            Workspaces ({{ $collection->workspaces_count ?? 0 }})
         </div>
         <div>
             Movies (0)
@@ -107,16 +108,17 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            @if ($workspace->visibility === 'public')
+            @if ($collection->visibility === 'public')
                 🌍 <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-700">Public</span>
-            @elseif (($workspace->shares_count ?? 0) > 0)
+            @elseif (($collection->shares_count ?? 0) > 0)
                 👥 <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">Shared</span>
             @else
                 🔒 <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">Private</span>
             @endif
+
             <span class="text-xs text-gray-500" title="Owner">
                 👤
-                {{ $workspace->user_id === auth()->id() ? 'Me' : '@' . $workspace->user->username }}
+                {{ $collection->user_id === auth()->id() ? 'Me' : '@' . $collection->user->username }}
             </span>
         </div>
 
@@ -124,21 +126,21 @@
             <span title="Likes">
                 ❤️ 0
             </span>
-            @if ($workspace->visibility === 'public')
-                <button type="button" title="Copy Link" wire:click="copyShareLink({{ $workspace->id }})">
+            @if ($collection->visibility === 'public')
+                <button type="button" title="Copy Link" wire:click="copyShareLink({{ $collection->id }})">
                     🔗
                 </button>
             @elseif($isOwner)
                 <button type="button" title="Share privately with user(s)"
-                    wire:click="openShareDrawer({{ $workspace->id }})">
-                    🤝 {{ $workspace->shares_count }}
+                    wire:click="openShareDrawer({{ $collection->id }})">
+                    🤝 {{ $collection->shares_count }}
                 </button>
             @else
                 <span title="Shared count">
-                    🤝 {{ $workspace->shares_count ?? 0 }}
+                    🤝 {{ $collection->shares_count ?? 0 }}
                 </span>
             @endif
-            <a href="{{ $workspaceUrl }}" target="_blank" title="Open link">
+            <a href="{{ $collectionUrl }}" target="_blank" title="Open link">
                 ↗️
             </a>
         </div>

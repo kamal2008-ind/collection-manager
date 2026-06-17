@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Attachment;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Collection extends Model
 {
@@ -18,6 +21,7 @@ class Collection extends Model
         'description',
         'image',
         'visibility',
+        'is_favorite',
     ];
 
     public function user(): BelongsTo
@@ -33,5 +37,57 @@ class Collection extends Model
             'container_type',
             'container_id'
         );
+    }
+    public function attachedWorkspaces()
+    {
+        return $this->hasMany(Attachment::class, 'attachable_id')
+            ->where('attachable_type', 'collection')
+            ->where('container_type', 'workspace');
+    }
+    public function shares(): HasMany
+    {
+        return $this->hasMany(CollectionShare::class);
+    }
+
+    public function sharedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'collection_shares',
+            'collection_id',
+            'shared_with_user_id'
+        )
+            ->withPivot(['shared_by_user_id', 'permission', 'last_accessed_at'])
+            ->withTimestamps();
+    }
+
+    public function isSharedWith(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->shares()
+            ->where('shared_with_user_id', $user->id)
+            ->exists();
+    }
+
+    public function canBeViewedBy(?User $user): bool
+    {
+        if ($this->visibility === 'public') {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        return $this->shares()
+            ->where('shared_with_user_id', $user->id)
+            ->exists();
     }
 }

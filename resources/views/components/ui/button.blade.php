@@ -14,8 +14,9 @@ $classes = match($variant) {
 
 <button
     type="{{ $type }}"
+    @disabled($attributes->get('disabled'))
     {{ $attributes->merge([
-        'class' => "px-4 py-2 rounded-lg transition font-medium {$classes}"
+        'class' => "px-4 py-2 rounded-lg transition font-medium {$classes} disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
     ]) }}
 >
     {{ $slot }}
