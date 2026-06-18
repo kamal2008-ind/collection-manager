@@ -1,0 +1,136 @@
+<div x-data x-show="$wire.removeItemsDrawerOpen" x-cloak class="fixed inset-0 z-[9999]">
+    <div class="absolute inset-0 bg-black/40" wire:click="closeRemoveItemsDrawer"></div>
+
+    <div class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b bg-red-50 px-6 py-5">
+            <div>
+                <h2 class="text-2xl font-bold text-red-700">
+                    Remove Items from Workspace
+                </h2>
+
+                @if ($removeItemsWorkspaceName)
+                    <p class="mt-1 text-sm text-red-600">
+                        {{ $removeItemsWorkspaceName }}
+                    </p>
+                @endif
+            </div>
+
+            <button type="button" wire:click="closeRemoveItemsDrawer" class="text-2xl text-gray-500 hover:text-gray-800">
+                ×
+            </button>
+        </div>
+
+        <div class="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+            <div>
+                <label class="mb-2 block text-sm font-medium">
+                    Item Type
+                </label>
+
+                <select wire:model.live="removeItemsType"
+                    class="w-full rounded-lg border-gray-300 focus:border-red-600 focus:ring-red-600">
+                    <option value="collections">Collections</option>
+                </select>
+            </div>
+
+            @php
+                $attachedCollections = collect($removeCollectionOptions)->filter(function ($collection) use (
+                    $removeCollectionSearch,
+                ) {
+                    if (blank($removeCollectionSearch)) {
+                        return true;
+                    }
+
+                    return str_contains(strtolower($collection['name']), strtolower($removeCollectionSearch));
+                });
+
+                $visibleAttachedCollections = $attachedCollections->take($drawerPerPage);
+
+                $hasMoreAttachedCollections = $attachedCollections->count() > $drawerPerPage;
+            @endphp
+
+            <div>
+                <h3 class="mb-3 text-base font-semibold">
+                    Attached Collections
+                </h3>
+
+                <div class="relative mb-3">
+                    <input type="text" wire:model.live.debounce.300ms="removeCollectionSearch"
+                        placeholder="Search attached collections..."
+                        class="w-full rounded-lg border-gray-300 pr-10 focus:border-red-600 focus:ring-red-600" />
+
+                    @if ($removeCollectionSearch)
+                        <button type="button" wire:click="$set('removeCollectionSearch', '')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                            title="Clear search">
+                            ✕
+                        </button>
+                    @endif
+                </div>
+
+                @if ($visibleAttachedCollections->isNotEmpty())
+                    <div class="overflow-hidden rounded-lg border bg-white">
+                        @foreach ($visibleAttachedCollections as $collection)
+                            <div wire:key="remove-collection-{{ $collection['id'] }}"
+                                class="flex items-center justify-between border-b px-4 py-3 last:border-b-0 hover:bg-red-50">
+                                <label class="flex cursor-pointer items-center gap-3">
+                                    <input type="checkbox" value="{{ $collection['id'] }}"
+                                        wire:model.live.number="selectedRemoveCollectionIds"
+                                        class="rounded border-gray-400">
+
+                                    <span class="font-medium">
+                                        {{ $collection['name'] }}
+                                    </span>
+                                </label>
+
+                                <button type="button"
+                                    wire:click="detachCollectionFromRemoveDrawer({{ $collection['id'] }})"
+                                    wire:confirm="Detach this collection from {{ $removeItemsWorkspaceName }}? This will only remove the attachment. The collection will not be deleted."
+                                    class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-100" title="Detach">
+                                    ⛓️‍💥
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+                    @if ($hasMoreAttachedCollections)
+                        <div x-data x-intersect="$wire.loadMoreDrawer()" class="py-4 text-center">
+                            <div wire:loading wire:target="loadMoreDrawer" class="text-sm text-gray-500">
+                                Loading more...
+                            </div>
+
+                            <div wire:loading.remove wire:target="loadMoreDrawer" class="text-sm text-gray-400">
+                                Scroll to load more
+                            </div>
+                        </div>
+                    @endif
+                    @if (!$hasMoreAttachedCollections && $visibleAttachedCollections->isNotEmpty())
+                        <div class="py-4 text-center text-sm text-gray-400">
+                            ✓ No more collections
+                        </div>
+                    @endif
+                @else
+                    <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
+                        No attached collections found.
+                    </p>
+                @endif
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 border-t bg-red-50 px-6 py-5">
+            <x-ui.button variant="secondary" wire:click="closeRemoveItemsDrawer">
+                Cancel
+            </x-ui.button>
+
+            @php
+                $disableRemoveItems = $attachedCollections->isEmpty();
+            @endphp
+
+            <x-ui.button variant="danger" wire:click="removeSelectedItems" :disabled="$disableRemoveItems"
+                wire:confirm="Remove selected collection(s) from this workspace? This will only remove attachments. Records will not be deleted.">
+                Remove Items
+                @if (count($selectedRemoveCollectionIds))
+                    ({{ count($selectedRemoveCollectionIds) }})
+                @endif
+            </x-ui.button>
+        </div>
+    </div>
+</div>

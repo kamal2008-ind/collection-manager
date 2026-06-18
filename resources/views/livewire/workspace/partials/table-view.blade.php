@@ -112,9 +112,6 @@
                                         <span class="text-2xl">☆</span>
                                     @endif
                                 </button>
-                                <button title="Add Items" wire:click="openAddItemsDrawer({{ $workspace->id }})">
-                                    ➕
-                                </button>
                                 <button title="Edit" wire:click="editWorkspace({{ $workspace->id }})">
                                     ✏️
                                 </button>
@@ -133,8 +130,19 @@
                                     <div x-show="activeMenu === {{ $workspace->id }}"
                                         @click.outside="activeMenu = null" x-transition
                                         class="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
+                                        <div class="border-t"></div>
+                                        <button type="button" wire:click="openAddItemsDrawer({{ $workspace->id }})"
+                                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                                            <span>➕</span>
+                                            <span>Add Items</span>
+                                        </button>
+                                        <button type="button" wire:click="openRemoveItemsDrawer({{ $workspace->id }})"
+                                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-red-50 text-red-600">
+                                            <span>➖</span>
+                                            <span>Remove Items</span>
+                                        </button>
 
-                                        {{-- Duplicate --}}
+                                        <div class="border-t"></div>                                        {{-- Duplicate --}}
                                         <button type="button" wire:click="duplicateWorkspace({{ $workspace->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>📋</span>
@@ -147,21 +155,6 @@
                                             <span>🔗</span>
                                             <span>Copy link</span>
                                         </button>
-
-                                        {{-- Statistics --}}
-                                        <button type="button" wire:click="workspaceStatistics({{ $workspace->id }})"
-                                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                            <span>📊</span>
-                                            <span>Statistics</span>
-                                        </button>
-
-                                        {{-- Settings --}}
-                                        <button type="button" wire:click="workspaceSettings({{ $workspace->id }})"
-                                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                                            <span>⚙️</span>
-                                            <span>Settings</span>
-                                        </button>
-
                                     </div>
                                 </div>
                             @else

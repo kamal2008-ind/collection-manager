@@ -1,5 +1,5 @@
 @if ($showDeleteModal)
-    <div class="fixed inset-0 bg-black/40 z-50">
+    <div class="fixed inset-0 bg-black/40 z-[9999]">
 
         <div class="flex items-center justify-center min-h-screen">
 

@@ -1,5 +1,5 @@
 @if ($showDeleteModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
         <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
             <h2 class="text-xl font-bold">
                 Move Collection to Trash?

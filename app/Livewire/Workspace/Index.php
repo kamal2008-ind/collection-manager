@@ -50,6 +50,14 @@ class Index extends Component
     public array $addedCollectionIds = [];
     public array $selectedCollectionIds = [];
     public string $collectionSearch = '';
+    public bool $removeItemsDrawerOpen = false;
+    public ?int $removeItemsWorkspaceId = null;
+    public ?string $removeItemsWorkspaceName = null;
+    public string $removeItemsType = 'collections';
+    public array $removeCollectionOptions = [];
+    public array $selectedRemoveCollectionIds = [];
+    public int $drawerPerPage = 12;
+    public string $removeCollectionSearch = '';
 
     protected WorkspaceService $workspaceService;
     protected WorkspaceShareService $workspaceShareService;
@@ -449,6 +457,7 @@ class Index extends Component
         $this->addItemsWorkspaceId = $workspace->id;
         $this->addItemsWorkspaceName = $workspace->name;
         $this->addItemsType = 'collections';
+        $this->drawerPerPage = 12;
 
         $this->collectionOptions = Collection::query()
             ->where('user_id', auth()->id())
@@ -477,6 +486,7 @@ class Index extends Component
         $this->addedCollectionIds = [];
         $this->selectedCollectionIds = [];
         $this->collectionSearch = '';
+        $this->drawerPerPage = 12;
     }
 
     public function addSelectedItems(): void
@@ -528,6 +538,95 @@ class Index extends Component
             ->toArray();
 
         $this->dispatch('toast', message: 'Collection detached from workspace.', type: 'success');
+    }
+    public function openRemoveItemsDrawer(int $workspaceId): void
+    {
+        $workspace = $this->abortIfNotOwner($workspaceId);
+
+        $this->removeItemsWorkspaceId = $workspace->id;
+        $this->removeItemsWorkspaceName = $workspace->name;
+        $this->removeItemsType = 'collections';
+        $this->drawerPerPage = 12;
+
+        $this->removeCollectionOptions = \App\Models\Collection::query()
+            ->where('user_id', auth()->id())
+            ->whereHas('attachedWorkspaces', function ($query) use ($workspace) {
+                $query->where('container_id', $workspace->id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->toArray();
+
+        $this->selectedRemoveCollectionIds = [];
+        $this->removeCollectionSearch = '';
+        $this->removeItemsDrawerOpen = true;
+    }
+
+    public function closeRemoveItemsDrawer(): void
+    {
+        $this->removeItemsDrawerOpen = false;
+        $this->removeItemsWorkspaceId = null;
+        $this->removeItemsWorkspaceName = null;
+        $this->removeItemsType = 'collections';
+        $this->removeCollectionOptions = [];
+        $this->selectedRemoveCollectionIds = [];
+        $this->removeCollectionSearch = '';
+        $this->drawerPerPage = 12;
+    }
+
+    public function detachCollectionFromRemoveDrawer(int $collectionId): void
+    {
+        if (! $this->removeItemsWorkspaceId) {
+            return;
+        }
+
+        $this->attachmentService->detachCollectionFromWorkspace(
+            $collectionId,
+            $this->removeItemsWorkspaceId
+        );
+
+        $this->removeCollectionOptions = collect($this->removeCollectionOptions)
+            ->reject(fn($collection) => (int) $collection['id'] === $collectionId)
+            ->values()
+            ->toArray();
+
+        $this->selectedRemoveCollectionIds = array_values(
+            array_diff($this->selectedRemoveCollectionIds, [$collectionId])
+        );
+
+        $this->dispatch('toast', message: 'Collection detached from workspace.', type: 'success');
+    }
+
+    public function removeSelectedItems(): void
+    {
+        if (! $this->removeItemsWorkspaceId) {
+            return;
+        }
+
+        if (empty($this->selectedRemoveCollectionIds)) {
+            $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
+            return;
+        }
+
+        foreach ($this->selectedRemoveCollectionIds as $collectionId) {
+            $this->attachmentService->detachCollectionFromWorkspace(
+                (int) $collectionId,
+                $this->removeItemsWorkspaceId
+            );
+        }
+
+        $this->removeCollectionOptions = collect($this->removeCollectionOptions)
+            ->whereNotIn('id', $this->selectedRemoveCollectionIds)
+            ->values()
+            ->toArray();
+
+        $this->selectedRemoveCollectionIds = [];
+
+        $this->dispatch('toast', message: 'Selected collection(s) detached from workspace.', type: 'success');
+    }
+    public function loadMoreDrawer(): void
+    {
+        $this->drawerPerPage += 12;
     }
     public function render()
     {

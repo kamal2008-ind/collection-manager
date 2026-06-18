@@ -1,15 +1,15 @@
-<div x-data x-show="$wire.addItemsDrawerOpen" x-cloak class="fixed inset-0 z-50">
+<div x-data x-show="$wire.addItemsDrawerOpen" x-cloak class="fixed inset-0 z-[9999]">
     <div class="absolute inset-0 bg-black/40" wire:click="closeAddItemsDrawer"></div>
 
     <div class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-xl">
-        <div class="flex items-center justify-between border-b px-6 py-5">
+        <div class="flex items-center justify-between border-b bg-green-50 px-6 py-5">
             <div>
-                <h2 class="text-2xl font-bold">
+                <h2 class="text-2xl font-bold text-green-700">
                     Add Items to Workspace
                 </h2>
 
                 @if ($addItemsWorkspaceName)
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-green-600">
                         {{ $addItemsWorkspaceName }}
                     </p>
                 @endif
@@ -44,35 +44,11 @@
 
                         return str_contains(strtolower($collection['name']), strtolower($collectionSearch));
                     });
+
+                $visibleCollections = $availableCollections->take($drawerPerPage);
+
+                $hasMoreCollections = $availableCollections->count() > $drawerPerPage;
             @endphp
-
-            <div>
-                <h3 class="mb-3 text-base font-semibold">
-                    Already Added Collections
-                </h3>
-
-                @if ($addedCollections->isNotEmpty())
-                    <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($addedCollections as $collection)
-                            <div class="flex items-center justify-between border-b px-4 py-3 last:border-b-0">
-                                <span class="font-medium">
-                                    {{ $collection['name'] }}
-                                </span>
-
-                                <button type="button" wire:click="detachCollectionItem({{ $collection['id'] }})"
-                                    wire:confirm="Detach this collection from {{ $addItemsWorkspaceName }}?"
-                                    class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50" title="Detach">
-                                    ⛓️‍💥
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
-                        No collections added to this workspace yet.
-                    </p>
-                @endif
-            </div>
 
             <div>
                 <h3 class="mb-3 text-base font-semibold">
@@ -93,7 +69,7 @@
                 </div>
                 @if ($availableCollections->isNotEmpty())
                     <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($availableCollections as $collection)
+                        @foreach ($visibleCollections as $collection)
                             <label wire:key="available-collection-{{ $collection['id'] }}"
                                 class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50">
                                 <input type="checkbox" value="{{ $collection['id'] }}"
@@ -105,6 +81,23 @@
                             </label>
                         @endforeach
                     </div>
+                    {{-- Load More Section --}}
+                    @if ($hasMoreCollections)
+                        <div x-data x-intersect="$wire.loadMoreDrawer()" class="py-4 text-center">
+                            <div wire:loading wire:target="loadMoreDrawer" class="text-sm text-gray-500">
+                                Loading more...
+                            </div>
+
+                            <div wire:loading.remove wire:target="loadMoreDrawer" class="text-sm text-gray-400">
+                                Scroll down to load more
+                            </div>
+                        </div>
+                    @endif
+                    @if (!$hasMoreCollections && $visibleCollections->isNotEmpty())
+                        <div class="py-4 text-center text-sm text-gray-400">
+                            ✓ No more collections
+                        </div>
+                    @endif
                 @else
                     <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
                         No available collections to add.
@@ -113,7 +106,7 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 border-t px-6 py-5">
+        <div class="flex justify-end gap-3 border-t bg-green-50 px-6 py-5">
             <x-ui.button variant="secondary" wire:click="closeAddItemsDrawer">
                 Cancel
             </x-ui.button>
@@ -122,7 +115,8 @@
                 $disableAddItems = $availableCollections->isEmpty();
             @endphp
 
-            <x-ui.button variant="primary" wire:click="addSelectedItems" :disabled="$disableAddItems">
+            <x-ui.button variant="success" wire:click="addSelectedItems" :disabled="$disableAddItems"
+                class="bg-green-600 hover:bg-green-700">
                 Add Items
                 @if (count($selectedCollectionIds))
                     ({{ count($selectedCollectionIds) }})

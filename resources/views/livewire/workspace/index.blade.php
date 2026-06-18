@@ -139,6 +139,7 @@
     @include('livewire.workspace.partials.delete-modal')
     @include('livewire.workspace.partials.share-drawer')
     @include('livewire.workspace.partials.add-items-drawer')
+    @include('livewire.workspace.partials.remove-items-drawer')
 </div>
 @script
     <script>

@@ -47,6 +47,13 @@ class Index extends Component
     public string $shareSearch = '';
     public array $shareSearchResults = [];
     public array $sharedUsers = [];
+    public int $drawerPerPage = 12;
+    public bool $detachFromDrawerOpen = false;
+    public ?int $detachFromCollectionId = null;
+    public ?string $detachFromCollectionName = null;
+    public array $detachWorkspaceOptions = [];
+    public array $selectedDetachWorkspaceIds = [];
+    public string $detachWorkspaceSearch = '';
 
     protected CollectionService $collectionService;
     protected AttachmentService $attachmentService;
@@ -240,6 +247,10 @@ class Index extends Component
         $this->perPage += 12;
     }
 
+    public function loadMoreDrawer(): void
+    {
+        $this->drawerPerPage += 12;
+    }
     private function resetForm(): void
     {
         $this->collectionId = null;
@@ -267,6 +278,7 @@ class Index extends Component
 
         $this->attachToCollectionId = $collection->id;
         $this->attachToCollectionName = $collection->name;
+        $this->drawerPerPage = 12;
 
         $this->workspaceOptions = Workspace::query()
             ->where('user_id', auth()->id())
@@ -291,6 +303,7 @@ class Index extends Component
         $this->attachedWorkspaceIds = [];
         $this->selectedWorkspaceIds = [];
         $this->workspaceSearch = '';
+        $this->drawerPerPage = 12;
     }
 
     public function attachToSelectedWorkspaces(): void
@@ -490,6 +503,90 @@ class Index extends Component
             ])
             ->values()
             ->toArray();
+    }
+    public function openDetachFromDrawer(int $collectionId): void
+    {
+        $collection = $this->abortIfNotOwner($collectionId);
+
+        $this->detachFromCollectionId = $collection->id;
+        $this->detachFromCollectionName = $collection->name;
+        $this->drawerPerPage = 12;
+
+        $attachedWorkspaceIds = $this->attachmentService
+            ->getAttachedWorkspaceIdsForCollection($collection->id);
+
+        $this->detachWorkspaceOptions = Workspace::query()
+            ->where('user_id', auth()->id())
+            ->whereIn('id', $attachedWorkspaceIds)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->toArray();
+
+        $this->selectedDetachWorkspaceIds = [];
+        $this->detachWorkspaceSearch = '';
+        $this->detachFromDrawerOpen = true;
+    }
+
+    public function closeDetachFromDrawer(): void
+    {
+        $this->detachFromDrawerOpen = false;
+        $this->detachFromCollectionId = null;
+        $this->detachFromCollectionName = null;
+        $this->detachWorkspaceOptions = [];
+        $this->selectedDetachWorkspaceIds = [];
+        $this->detachWorkspaceSearch = '';
+        $this->drawerPerPage = 12;
+    }
+
+    public function detachWorkspaceFromDrawer(int $workspaceId): void
+    {
+        if (! $this->detachFromCollectionId) {
+            return;
+        }
+
+        $this->attachmentService->detachCollectionFromWorkspace(
+            $this->detachFromCollectionId,
+            $workspaceId
+        );
+
+        $this->detachWorkspaceOptions = collect($this->detachWorkspaceOptions)
+            ->reject(fn($workspace) => (int) $workspace['id'] === $workspaceId)
+            ->values()
+            ->toArray();
+
+        $this->selectedDetachWorkspaceIds = array_values(
+            array_diff($this->selectedDetachWorkspaceIds, [$workspaceId])
+        );
+
+        $this->dispatch('toast', message: 'Collection detached from workspace.', type: 'success');
+    }
+
+    public function detachSelectedWorkspaces(): void
+    {
+        if (! $this->detachFromCollectionId) {
+            return;
+        }
+
+        if (empty($this->selectedDetachWorkspaceIds)) {
+            $this->dispatch('toast', message: 'Please select at least 1 workspace.', type: 'error');
+            return;
+        }
+
+        foreach ($this->selectedDetachWorkspaceIds as $workspaceId) {
+            $this->attachmentService->detachCollectionFromWorkspace(
+                $this->detachFromCollectionId,
+                (int) $workspaceId
+            );
+        }
+
+        $this->detachWorkspaceOptions = collect($this->detachWorkspaceOptions)
+            ->whereNotIn('id', $this->selectedDetachWorkspaceIds)
+            ->values()
+            ->toArray();
+
+        $this->selectedDetachWorkspaceIds = [];
+
+        $this->dispatch('toast', message: 'Selected workspace(s) detached from collection.', type: 'success');
     }
     public function render()
     {

@@ -34,9 +34,6 @@
                         <span class="text-2xl">☆</span>
                     @endif
                 </button>
-                <button title="Attach To" wire:click="openAttachToDrawer({{ $collection->id }})">
-                    📎
-                </button>
                 <button title="Edit" wire:click="editCollection({{ $collection->id }})">
                     ✏️
                 </button>
@@ -53,35 +50,30 @@
                     <div x-show="activeMenu === 'collection-{{ $collection->id }}'" @click.outside="activeMenu = null"
                         x-transition
                         class="absolute right-0 z-[9999] mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
-
+                        <div class="my-1 border-t"></div>
+                        <button type="button" wire:click="openAttachToDrawer({{ $collection->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>📎</span>
+                            <span>Attach To Workspace</span>
+                        </button>
+                        <button type="button" wire:click="openDetachFromDrawer({{ $collection->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>⛓️‍💥</span>
+                            <span>Detach From Workspace</span>
+                        </button>
+                        <div class="my-1 border-t"></div>
                         {{-- Duplicate --}}
                         <button type="button" wire:click="duplicateCollection({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>📋</span>
                             <span>Duplicate</span>
                         </button>
-
                         {{-- Copy Link --}}
                         <button type="button" wire:click="copyCollectionUrl({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>🔗</span>
                             <span>Copy link</span>
                         </button>
-
-                        {{-- Statistics --}}
-                        <button type="button" wire:click="collectionStatistics({{ $collection->id }})"
-                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                            <span>📊</span>
-                            <span>Statistics</span>
-                        </button>
-
-                        {{-- Settings --}}
-                        <button type="button" wire:click="collectionSettings({{ $collection->id }})"
-                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
-                            <span>⚙️</span>
-                            <span>Settings</span>
-                        </button>
-
                     </div>
                 </div>
             @else

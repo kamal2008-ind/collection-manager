@@ -2,7 +2,7 @@
     x-data
     x-show="$wire.shareDrawerOpen"
     x-cloak
-    class="fixed inset-0 z-50"
+    class="fixed inset-0 z-[9999]"
 >
     <div
         class="absolute inset-0 bg-black/40"

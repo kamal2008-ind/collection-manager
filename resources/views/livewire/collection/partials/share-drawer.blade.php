@@ -1,4 +1,4 @@
-<div x-data x-show="$wire.shareDrawerOpen" x-cloak class="fixed inset-0 z-50">
+<div x-data x-show="$wire.shareDrawerOpen" x-cloak class="fixed inset-0 z-[9999]">
     <div class="absolute inset-0 bg-black/40" wire:click="closeShareDrawer"></div>
 
     <div class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-xl">

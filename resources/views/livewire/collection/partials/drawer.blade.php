@@ -4,7 +4,7 @@
     <div class="fixed inset-0 bg-black/40 z-40" wire:click="closeDrawer"></div>
 
     {{-- Drawer --}}
-    <div class="fixed top-0 right-0 h-screen w-[500px] bg-white shadow-xl z-50 flex flex-col">
+    <div class="fixed top-0 right-0 h-screen w-[500px] bg-white shadow-xl z-[9999] flex flex-col">
 
         {{-- Header --}}
         <div class="flex items-center justify-between p-6 border-b shrink-0">
