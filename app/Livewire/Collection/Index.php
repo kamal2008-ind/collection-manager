@@ -10,6 +10,7 @@ use Livewire\WithPagination;
 use App\Models\Workspace;
 use App\Services\AttachmentService;
 use App\Services\CollectionShareService;
+use Illuminate\Validation\Rule;
 
 class Index extends Component
 {
@@ -67,17 +68,32 @@ class Index extends Component
         $this->attachmentService = $attachmentService;
         $this->collectionShareService = $collectionShareService;
     }
-
     protected function rules(): array
     {
         return [
-            'name' => ['required', 'min:3', 'max:255'],
-            'description' => ['nullable', 'max:1000'],
-            'visibility' => ['required', 'in:private,public'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'name' => [
+                'required',
+                'min:3',
+                'max:255',
+                Rule::unique('collections', 'name')
+                    ->where(fn($query) => $query->where('user_id', auth()->id()))
+                    ->ignore($this->collectionId),
+                function ($attribute, $value, $fail) {
+                    $exists = Collection::query()
+                        ->where('user_id', auth()->id())
+                        ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($value))])
+                        ->when($this->collectionId, function ($query) {
+                            $query->where('id', '!=', $this->collectionId);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('The name has already been taken.');
+                    }
+                },
+            ],
         ];
     }
-
     public function updatedSearch(): void
     {
         $this->selected = [];
@@ -148,7 +164,7 @@ class Index extends Component
         $collection = $this->abortIfNotOwner($collectionId);
 
         $this->collectionId = $collection->id;
-        $this->name = $collection->name;
+        $this->name = trim($collection->name);
         $this->description = $collection->description ?? '';
         $this->visibility = $collection->visibility;
         $this->currentImage = $collection->image;

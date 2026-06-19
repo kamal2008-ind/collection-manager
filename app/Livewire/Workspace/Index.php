@@ -11,6 +11,7 @@ use App\Services\WorkspaceShareService;
 use SebastianBergmann\Timer\Duration;
 use App\Models\Collection;
 use App\Services\AttachmentService;
+use Illuminate\Validation\Rule;
 
 class Index extends Component
 {
@@ -62,13 +63,31 @@ class Index extends Component
     protected WorkspaceService $workspaceService;
     protected WorkspaceShareService $workspaceShareService;
     protected AttachmentService $attachmentService;
+
     protected function rules(): array
     {
         return [
-            'name' => ['required', 'min:3', 'max:255'],
-            'description' => ['nullable', 'max:1000'],
-            'visibility' => ['required', 'in:private,public'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'name' => [
+                'required',
+                'min:3',
+                'max:255',
+                Rule::unique('workspaces', 'name')
+                    ->where(fn($query) => $query->where('user_id', auth()->id()))
+                    ->ignore($this->workspaceId),
+                function ($attribute, $value, $fail) {
+                    $exists = Workspace::query()
+                        ->where('user_id', auth()->id())
+                        ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($value))])
+                        ->when($this->workspaceId, function ($query) {
+                            $query->where('id', '!=', $this->workspaceId);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('The name has already been taken.');
+                    }
+                },
+            ],
         ];
     }
     public function boot(
@@ -175,7 +194,7 @@ class Index extends Component
             ->findById($workspaceId);
 
         $this->workspaceId = $workspace->id;
-        $this->name = $workspace->name;
+        $this->name = trim($workspace->name);
         $this->currentImage = $workspace->image;
         $this->description = $workspace->description ?? '';
         $this->visibility = $workspace->visibility;
