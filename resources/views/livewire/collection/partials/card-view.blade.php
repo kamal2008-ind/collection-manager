@@ -5,6 +5,6 @@
             <x-collection-card :collection="$collection" :selected="$selected" />
         </div>
     @empty
-        <div>No collections found.</div>
+        <div><x-empty-state icon="🎬" title="No collections found" message="Try changing your search/filter/access mode or create a new collection."/></div>
     @endforelse
 </div>

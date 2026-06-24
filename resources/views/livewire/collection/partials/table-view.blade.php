@@ -30,10 +30,7 @@
                     </td>
                     {{-- Owner --}}
                     <td class="p-3 text-center">
-                        <div class="text-sm text-gray-500">
-                            👤
-                            {{ $collection->user_id === auth()->id() ? 'Me' : '@' . $collection->user->username }}
-                        </div>
+                        <x-owner-badge :userid="$collection->user_id" :username="$collection->user->username" :view="$view" />
                     </td>
                     {{-- Workspace --}}
                     <td class="p-3 text-center">
@@ -50,35 +47,10 @@
                     {{-- Status --}}
                     <td class="p-3">
                         <div class="flex items-center justify-center gap-3">
-                            @if ($collection->visibility === 'public')
-                                <span title="Public"> 🌍 </span>
-                            @elseif (($collection->shares_count ?? 0) > 0)
-                                <span title="Shared"> 👥 </span>
-                            @else
-                                <span title="Private"> 🔒 </span>
-                            @endif
-                            <span title="Likes">
-                                ❤️ 0
-                            </span>
+                            <x-status-badge :visibility="$collection->visibility" :shared="($collection->shares_count ?? 0) > 0" :view="$view" />
 
-                            @if ($collection->visibility === 'public')
-                                <button type="button" title="Copy link"
-                                    wire:click="copyShareLink({{ $collection->id }})">
-                                    🔗
-                                </button>
-                            @elseif($isOwner)
-                                <button type="button" title="Share privately with user(s)"
-                                    wire:click="openShareDrawer({{ $collection->id }})">
-                                    🤝 {{ $collection->shares_count }}
-                                </button>
-                            @else
-                                <span title="Shared count">
-                                    🤝 {{ $collection->shares_count ?? 0 }}
-                                </span>
-                            @endif
-                            <a href="{{ $collectionUrl }}" target="_blank" title="Open link">
-                                ↗️
-                            </a>
+                            <x-card-footer-meta :visibility="$collection->visibility" :assetId="$collection->id" :isOwner="$isOwner" :shareCount="$collection->shares_count"
+                                :assetUrl="$collectionUrl" />
                         </div>
                     </td>
 
@@ -158,7 +130,8 @@
             @empty
                 <tr>
                     <td colspan="8" class="p-6 text-center">
-                        No collections found.
+                        <x-empty-state icon="🎬" title="No collections found"
+                            message="Try changing your search/filter/access mode or create a new collection." />
                     </td>
                 </tr>
             @endforelse

@@ -1,0 +1,94 @@
+1. Finish AttachmentService cleanup
+2. Owned / Shared / Public tabs
+3. Movie statistics
+4. Bulk Attach To
+5. Poster aspect-ratio safeguard
+
+
++ Movie share drawer
++ Collection -> Add Items -> Remove Items
+
+Phase 5 — Statistics Page / Drawer
+
+Currently placeholder:
+
+Statistics
+
+Later we can show:
+
+Views
+Workspaces Attached
+Collections Attached
+Favorites
+Created Date
+Updated Date
+
+1. Permission Audit
+
+Test all combinations:
+
+Owned Movie
+Public Movie
+Private Movie
+Guest Access
+
+Actions:
+
+View
+Edit
+Delete
+Favorite
+Attach
+Detach
+Copy Link
+Show Page
+2. Movie Statistics Placeholder
+
+Currently menu has:
+
+Statistics
+Settings
+
+We should decide:
+
+Hide
+Placeholder Toast
+Basic Statistics Drawer
+
+for V1.
+
+3. Workspace / Collection Sync Check
+
+Verify:
+
+Workspace Movie Count
+Collection Movie Count
+Attach
+Detach
+Soft Delete
+Restore
+
+remain synchronized.
+
+4. Architecture Cleanup
+
+Review:
+
+MovieRepository
+MovieService
+Movie Index
+Movie Show
+Movie Model
+AttachmentService
+
+and remove any leftover experimental code from earlier debugging.
+
+5. Decide Movie V1 Completion Checklist
+
+Create a final checklist and determine:
+
+Movie V1 Complete
+or
+Movie V1.1 Required
+
+before touching Books.

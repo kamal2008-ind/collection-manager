@@ -12,6 +12,8 @@ use SebastianBergmann\Timer\Duration;
 use App\Models\Collection;
 use App\Services\AttachmentService;
 use Illuminate\Validation\Rule;
+use App\Models\Movie;
+use App\Models\Attachment;
 
 class Index extends Component
 {
@@ -59,6 +61,14 @@ class Index extends Component
     public array $selectedRemoveCollectionIds = [];
     public int $drawerPerPage = 12;
     public string $removeCollectionSearch = '';
+    public string $accessMode = 'owned';
+    public array $movieOptions = [];
+    public array $addedMovieIds = [];
+    public array $selectedMovieIds = [];
+    public string $movieSearch = '';
+    public array $removeMovieOptions = [];
+    public array $selectedRemoveMovieIds = [];
+    public string $removeMovieSearch = '';
 
     protected WorkspaceService $workspaceService;
     protected WorkspaceShareService $workspaceShareService;
@@ -88,6 +98,9 @@ class Index extends Component
                     }
                 },
             ],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'visibility' => ['required', Rule::in(['private', 'public'])],
+            'image' => ['nullable', 'image', 'max:2048'],
         ];
     }
     public function boot(
@@ -484,15 +497,32 @@ class Index extends Component
             ->get(['id', 'name'])
             ->toArray();
 
-        $this->addedCollectionIds = \App\Models\Attachment::query()
+        $this->addedCollectionIds = Attachment::query()
             ->where('container_type', 'workspace')
             ->where('container_id', $workspace->id)
             ->where('attachable_type', 'collection')
             ->pluck('attachable_id')
             ->toArray();
 
-        $this->selectedCollectionIds = [];
+        $this->movieOptions = Movie::query()
+            ->where('user_id', auth()->id())
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($movie) => [
+                'id' => $movie->id,
+                'name' => $movie->title,
+            ])
+            ->toArray();
 
+        $this->addedMovieIds = Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $workspace->id)
+            ->where('attachable_type', 'movie')
+            ->pluck('attachable_id')
+            ->toArray();
+
+        $this->selectedCollectionIds = [];
+        $this->selectedMovieIds = [];
         $this->addItemsDrawerOpen = true;
     }
     public function closeAddItemsDrawer(): void
@@ -506,6 +536,10 @@ class Index extends Component
         $this->selectedCollectionIds = [];
         $this->collectionSearch = '';
         $this->drawerPerPage = 12;
+        $this->movieOptions = [];
+        $this->addedMovieIds = [];
+        $this->selectedMovieIds = [];
+        $this->movieSearch = '';
     }
 
     public function addSelectedItems(): void
@@ -514,28 +548,53 @@ class Index extends Component
             return;
         }
 
-        if ($this->addItemsType === 'collections' && empty($this->selectedCollectionIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
-            return;
+        if ($this->addItemsType === 'collections') {
+            if (empty($this->selectedCollectionIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedCollectionIds as $collectionId) {
+                    $this->attachmentService->attachCollectionToWorkspaces(
+                        (int) $collectionId,
+                        [$this->addItemsWorkspaceId]
+                    );
+                }
+
+                $this->addedCollectionIds = Attachment::query()
+                    ->where('container_type', 'workspace')
+                    ->where('container_id', $this->addItemsWorkspaceId)
+                    ->where('attachable_type', 'collection')
+                    ->pluck('attachable_id')
+                    ->toArray();
+
+                $this->selectedCollectionIds = [];
+                $this->collectionSearch = '';
+                $this->dispatch('toast', message: 'Selected collection(s) added successfully.', type: 'success');
+            }
+        } elseif ($this->addItemsType === 'movies') {
+            if (empty($this->selectedMovieIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedMovieIds as $movieId) {
+                    $this->attachmentService->attachMovieToWorkspaces(
+                        (int) $movieId,
+                        [$this->addItemsWorkspaceId]
+                    );
+                }
+
+                $this->addedMovieIds = Attachment::query()
+                    ->where('container_type', 'workspace')
+                    ->where('container_id', $this->addItemsWorkspaceId)
+                    ->where('attachable_type', 'movie')
+                    ->pluck('attachable_id')
+                    ->toArray();
+
+                $this->selectedMovieIds = [];
+                $this->movieSearch = '';
+                $this->dispatch('toast', message: 'Selected movie(s) added successfully.', type: 'success');
+            }
         }
-
-        foreach ($this->selectedCollectionIds as $collectionId) {
-            $this->attachmentService->attachCollectionToWorkspaces(
-                (int) $collectionId,
-                [$this->addItemsWorkspaceId]
-            );
-        }
-
-        $this->addedCollectionIds = \App\Models\Attachment::query()
-            ->where('container_type', 'workspace')
-            ->where('container_id', $this->addItemsWorkspaceId)
-            ->where('attachable_type', 'collection')
-            ->pluck('attachable_id')
-            ->toArray();
-
-        $this->selectedCollectionIds = [];
-        $this->collectionSearch = '';
-        $this->dispatch('toast', message: 'Items added successfully.', type: 'success');
     }
 
     public function detachCollectionItem(int $collectionId): void
@@ -576,8 +635,23 @@ class Index extends Component
             ->get(['id', 'name'])
             ->toArray();
 
+        $this->removeMovieOptions = Movie::query()
+            ->where('user_id', auth()->id())
+            ->whereHas('attachedWorkspaces', function ($query) use ($workspace) {
+                $query->where('container_id', $workspace->id);
+            })
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($movie) => [
+                'id' => $movie->id,
+                'name' => $movie->title,
+            ])
+            ->toArray();
+
         $this->selectedRemoveCollectionIds = [];
         $this->removeCollectionSearch = '';
+        $this->selectedRemoveMovieIds = [];
+        $this->removeMovieSearch = '';
         $this->removeItemsDrawerOpen = true;
     }
 
@@ -591,6 +665,9 @@ class Index extends Component
         $this->selectedRemoveCollectionIds = [];
         $this->removeCollectionSearch = '';
         $this->drawerPerPage = 12;
+        $this->removeMovieOptions = [];
+        $this->selectedRemoveMovieIds = [];
+        $this->removeMovieSearch = '';
     }
 
     public function detachCollectionFromRemoveDrawer(int $collectionId): void
@@ -621,31 +698,91 @@ class Index extends Component
         if (! $this->removeItemsWorkspaceId) {
             return;
         }
+        if ($this->removeItemsType === 'collections') {
+            if (empty($this->selectedRemoveCollectionIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
+                return;
+            } else {
 
-        if (empty($this->selectedRemoveCollectionIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
-            return;
+                foreach ($this->selectedRemoveCollectionIds as $collectionId) {
+                    $this->attachmentService->detachCollectionFromWorkspace(
+                        (int) $collectionId,
+                        $this->removeItemsWorkspaceId
+                    );
+                }
+
+                $this->removeCollectionOptions = collect($this->removeCollectionOptions)
+                    ->whereNotIn('id', $this->selectedRemoveCollectionIds)
+                    ->values()
+                    ->toArray();
+
+                $this->selectedRemoveCollectionIds = [];
+
+                $this->dispatch('toast', message: 'Selected collection(s) detached from workspace.', type: 'success');
+            }
+        } elseif ($this->removeItemsType === 'movies') {
+            if (empty($this->selectedRemoveMovieIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedRemoveMovieIds as $movieId) {
+                    $this->attachmentService->detachMovieFromWorkspace(
+                        (int) $movieId,
+                        $this->removeItemsWorkspaceId
+                    );
+                }
+
+                $this->removeMovieOptions = collect($this->removeMovieOptions)
+                    ->whereNotIn('id', $this->selectedRemoveMovieIds)
+                    ->values()
+                    ->toArray();
+
+                $this->selectedRemoveMovieIds = [];
+
+                $this->dispatch('toast', message: 'Selected movie(s) detached from workspace.', type: 'success');
+            }
         }
-
-        foreach ($this->selectedRemoveCollectionIds as $collectionId) {
-            $this->attachmentService->detachCollectionFromWorkspace(
-                (int) $collectionId,
-                $this->removeItemsWorkspaceId
-            );
-        }
-
-        $this->removeCollectionOptions = collect($this->removeCollectionOptions)
-            ->whereNotIn('id', $this->selectedRemoveCollectionIds)
-            ->values()
-            ->toArray();
-
-        $this->selectedRemoveCollectionIds = [];
-
-        $this->dispatch('toast', message: 'Selected collection(s) detached from workspace.', type: 'success');
     }
     public function loadMoreDrawer(): void
     {
         $this->drawerPerPage += 12;
+    }
+    public function setAccessMode(string $mode): void
+    {
+        if (! in_array($mode, ['owned', 'shared', 'public'], true)) {
+            return;
+        }
+
+        $this->accessMode = $mode;
+
+        if ($mode !== 'owned') {
+            $this->filter = 'recent';
+        }
+
+        $this->selected = [];
+        $this->resetPage();
+    }
+    public function detachMovieFromRemoveDrawer(int $movieId): void
+    {
+        if (! $this->removeItemsWorkspaceId) {
+            return;
+        }
+
+        $this->attachmentService->detachMovieFromWorkspace(
+            $movieId,
+            $this->removeItemsWorkspaceId
+        );
+
+        $this->removeMovieOptions = collect($this->removeMovieOptions)
+            ->reject(fn($movie) => (int) $movie['id'] === $movieId)
+            ->values()
+            ->toArray();
+
+        $this->selectedRemoveMovieIds = array_values(
+            array_diff($this->selectedRemoveMovieIds, [$movieId])
+        );
+
+        $this->dispatch('toast', message: 'Movie detached from workspace.', type: 'success');
     }
     public function render()
     {
@@ -653,6 +790,7 @@ class Index extends Component
             'workspaces' => $this->workspaceService
                 ->getPaginatedWorkspaces(
                     auth()->id(),
+                    $this->accessMode,
                     $this->search,
                     $this->perPage,
                     $this->filter

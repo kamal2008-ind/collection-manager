@@ -55,6 +55,7 @@ class Index extends Component
     public array $detachWorkspaceOptions = [];
     public array $selectedDetachWorkspaceIds = [];
     public string $detachWorkspaceSearch = '';
+    public string $accessMode = 'owned';
 
     protected CollectionService $collectionService;
     protected AttachmentService $attachmentService;
@@ -92,6 +93,9 @@ class Index extends Component
                     }
                 },
             ],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'visibility' => ['required', Rule::in(['private', 'public'])],
+            'image' => ['nullable', 'image', 'max:2048'],
         ];
     }
     public function updatedSearch(): void
@@ -604,11 +608,44 @@ class Index extends Component
 
         $this->dispatch('toast', message: 'Selected workspace(s) detached from collection.', type: 'success');
     }
+    public function setAccessMode(string $mode): void
+    {
+        if (! in_array($mode, ['owned', 'shared', 'public'], true)) {
+            return;
+        }
+
+        $this->accessMode = $mode;
+
+        if ($mode !== 'owned') {
+            $this->filter = 'recent';
+        }
+
+        $this->selected = [];
+        $this->resetPage();
+    }
+    public function copyShareLink(int $collectionId): void
+    {
+        $collection = $this->collectionService->findById($collectionId);
+
+        if ($collection->visibility !== 'public') {
+            // session()->flash('success', 'Make workspace public before sharing.');
+            $this->dispatch('toast', message: 'Make collection public before sharing.', type: 'success');
+            return;
+        }
+
+        $url = url('/u/' . $collection->user->username . '/collections/' . $collection->slug);
+
+        $this->dispatch('copy-to-clipboard', text: $url);
+
+        // session()->flash('success', 'Workspace share link copied.');
+        $this->dispatch('toast', message: 'Collection share link copied.', type: 'success');
+    }
     public function render()
     {
         return view('livewire.collection.index', [
             'collections' => $this->collectionService->getPaginatedCollections(
                 auth()->id(),
+                $this->accessMode,
                 $this->search,
                 $this->perPage,
                 $this->filter

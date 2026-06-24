@@ -90,7 +90,7 @@
             Workspaces ({{ $collection->workspaces_count ?? 0 }})
         </div>
         <div>
-            Movies (0)
+            Movies ({{ $collection->movies_count ?? 0 }})
         </div>
         <div>
             Books (0)
@@ -100,41 +100,15 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            @if ($collection->visibility === 'public')
-                🌍 <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-700">Public</span>
-            @elseif (($collection->shares_count ?? 0) > 0)
-                👥 <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">Shared</span>
-            @else
-                🔒 <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">Private</span>
-            @endif
+            <x-status-badge :visibility="$collection->visibility" :shared="($collection->shares_count ?? 0) > 0" />
 
-            <span class="text-xs text-gray-500" title="Owner">
-                👤
-                {{ $collection->user_id === auth()->id() ? 'Me' : '@' . $collection->user->username }}
-            </span>
+            <x-owner-badge :userid="$collection->user_id" :username="$collection->user->username" />
         </div>
 
         <div class="flex gap-2">
-            <span title="Likes">
-                ❤️ 0
-            </span>
-            @if ($collection->visibility === 'public')
-                <button type="button" title="Copy Link" wire:click="copyShareLink({{ $collection->id }})">
-                    🔗
-                </button>
-            @elseif($isOwner)
-                <button type="button" title="Share privately with user(s)"
-                    wire:click="openShareDrawer({{ $collection->id }})">
-                    🤝 {{ $collection->shares_count }}
-                </button>
-            @else
-                <span title="Shared count">
-                    🤝 {{ $collection->shares_count ?? 0 }}
-                </span>
-            @endif
-            <a href="{{ $collectionUrl }}" target="_blank" title="Open link">
-                ↗️
-            </a>
+            <x-card-footer-meta :visibility="$collection->visibility" :assetId="$collection->id" :isOwner="$isOwner"
+                :shareCount="$collection->shares_count"
+                :assetUrl="$collectionUrl" />
         </div>
     </div>
 </div>

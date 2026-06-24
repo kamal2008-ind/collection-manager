@@ -52,12 +52,14 @@ class CollectionService
 
     public function getPaginatedCollections(
         int $userId,
+        string $accessMode = 'owned',
         string $search = '',
         int $perPage = 12,
         string $filter = 'recent'
     ) {
         return $this->collectionRepository->paginateByUser(
             $userId,
+            $accessMode,
             $search,
             $perPage,
             $filter

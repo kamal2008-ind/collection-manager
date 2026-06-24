@@ -26,63 +26,129 @@
                     Item Type
                 </label>
 
-                <select wire:model.live="addItemsType"
-                    class="w-full rounded-lg border-gray-300 focus:border-blue-600 focus:ring-blue-600">
+                <select
+                    wire:model.live="addItemsType"
+                    class="w-full rounded-lg border-gray-300 focus:border-green-600 focus:ring-green-600"
+                >
                     <option value="collections">Collections</option>
+                    <option value="movies">Movies</option>
                 </select>
             </div>
 
             @php
-                $addedCollections = collect($collectionOptions)->whereIn('id', $addedCollectionIds);
+                $isMovieType = $addItemsType === 'movies';
 
-                $availableCollections = collect($collectionOptions)
-                    ->whereNotIn('id', $addedCollectionIds)
-                    ->filter(function ($collection) use ($collectionSearch) {
-                        if (blank($collectionSearch)) {
+                $itemOptions = $isMovieType
+                    ? collect($movieOptions ?? [])
+                    : collect($collectionOptions ?? []);
+
+                $addedItemIds = $isMovieType
+                    ? ($addedMovieIds ?? [])
+                    : ($addedCollectionIds ?? []);
+
+                $searchValue = $isMovieType
+                    ? ($movieSearch ?? '')
+                    : ($collectionSearch ?? '');
+
+                $itemLabel = $isMovieType ? 'Movies' : 'Collections';
+                $itemLabelSingular = $isMovieType ? 'movie' : 'collection';
+
+                $availableItems = $itemOptions
+                    ->whereNotIn('id', $addedItemIds)
+                    ->filter(function ($item) use ($searchValue) {
+                        if (blank($searchValue)) {
                             return true;
                         }
 
-                        return str_contains(strtolower($collection['name']), strtolower($collectionSearch));
+                        return str_contains(strtolower($item['name']), strtolower($searchValue));
                     });
 
-                $visibleCollections = $availableCollections->take($drawerPerPage);
+                $visibleItems = $availableItems->take($drawerPerPage);
+                $hasMoreItems = $availableItems->count() > $drawerPerPage;
 
-                $hasMoreCollections = $availableCollections->count() > $drawerPerPage;
+                $selectedCount = $isMovieType
+                    ? count($selectedMovieIds ?? [])
+                    : count($selectedCollectionIds ?? []);
+
+                $disableAddItems = $availableItems->isEmpty();
             @endphp
 
             <div>
                 <h3 class="mb-3 text-base font-semibold">
-                    Available Collections
+                    Available {{ $itemLabel }}
                 </h3>
-                <div class="relative mb-3">
-                    <input type="text" wire:model.live.debounce.300ms="collectionSearch"
-                        placeholder="Search available collections..."
-                        class="w-full rounded-lg border-gray-300 pr-10 focus:border-blue-600 focus:ring-blue-600" />
 
-                    @if ($collectionSearch)
-                        <button type="button" wire:click="$set('collectionSearch', '')"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                            title="Clear search">
-                            ✕
-                        </button>
+                <div class="relative mb-3">
+                    @if ($isMovieType)
+                        <input
+                            type="text"
+                            wire:model.live.debounce.300ms="movieSearch"
+                            placeholder="Search available movies..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600"
+                        />
+
+                        @if ($movieSearch)
+                            <button
+                                type="button"
+                                wire:click="$set('movieSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search"
+                            >
+                                ✕
+                            </button>
+                        @endif
+                    @else
+                        <input
+                            type="text"
+                            wire:model.live.debounce.300ms="collectionSearch"
+                            placeholder="Search available collections..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600"
+                        />
+
+                        @if ($collectionSearch)
+                            <button
+                                type="button"
+                                wire:click="$set('collectionSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search"
+                            >
+                                ✕
+                            </button>
+                        @endif
                     @endif
                 </div>
-                @if ($availableCollections->isNotEmpty())
+
+                @if ($availableItems->isNotEmpty())
                     <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($visibleCollections as $collection)
-                            <label wire:key="available-collection-{{ $collection['id'] }}"
-                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50">
-                                <input type="checkbox" value="{{ $collection['id'] }}"
-                                    wire:model.live="selectedCollectionIds" class="rounded border-gray-400">
+                        @foreach ($visibleItems as $item)
+                            <label
+                                wire:key="available-{{ $addItemsType }}-{{ $item['id'] }}"
+                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50"
+                            >
+                                @if ($isMovieType)
+                                    <input
+                                        type="checkbox"
+                                        value="{{ $item['id'] }}"
+                                        wire:model.live="selectedMovieIds"
+                                        class="rounded border-gray-400"
+                                    >
+                                @else
+                                    <input
+                                        type="checkbox"
+                                        value="{{ $item['id'] }}"
+                                        wire:model.live="selectedCollectionIds"
+                                        class="rounded border-gray-400"
+                                    >
+                                @endif
 
                                 <span class="font-medium">
-                                    {{ $collection['name'] }}
+                                    {{ $item['name'] }}
                                 </span>
                             </label>
                         @endforeach
                     </div>
-                    {{-- Load More Section --}}
-                    @if ($hasMoreCollections)
+
+                    @if ($hasMoreItems)
                         <div x-data x-intersect="$wire.loadMoreDrawer()" class="py-4 text-center">
                             <div wire:loading wire:target="loadMoreDrawer" class="text-sm text-gray-500">
                                 Loading more...
@@ -93,14 +159,15 @@
                             </div>
                         </div>
                     @endif
-                    @if (!$hasMoreCollections && $visibleCollections->isNotEmpty())
+
+                    @if (! $hasMoreItems && $visibleItems->isNotEmpty())
                         <div class="py-4 text-center text-sm text-gray-400">
-                            ✓ No more collections
+                            ✓ No more {{ strtolower($itemLabel) }}
                         </div>
                     @endif
                 @else
                     <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
-                        No available collections to add.
+                        No available {{ $itemLabelSingular }} to add.
                     </p>
                 @endif
             </div>
@@ -111,15 +178,15 @@
                 Cancel
             </x-ui.button>
 
-            @php
-                $disableAddItems = $availableCollections->isEmpty();
-            @endphp
-
-            <x-ui.button variant="success" wire:click="addSelectedItems" :disabled="$disableAddItems"
-                class="bg-green-600 hover:bg-green-700">
+            <x-ui.button
+                variant="success"
+                wire:click="addSelectedItems"
+                :disabled="$disableAddItems"
+                class="bg-green-600 hover:bg-green-700"
+            >
                 Add Items
-                @if (count($selectedCollectionIds))
-                    ({{ count($selectedCollectionIds) }})
+                @if ($selectedCount)
+                    ({{ $selectedCount }})
                 @endif
             </x-ui.button>
         </div>

@@ -26,11 +26,13 @@ class WorkspaceRepository
 
         return $workspace;
     }
+
     public function delete(int $id): bool
     {
         return Workspace::findOrFail($id)
             ->delete();
     }
+
     public function toggleFavorite(int $id): bool
     {
         $workspace = Workspace::findOrFail($id);
@@ -41,6 +43,7 @@ class WorkspaceRepository
 
         return $workspace->fresh()->is_favorite;
     }
+
     public function bulkFavorite(array $ids): void
     {
         Workspace::whereIn('id', $ids)
@@ -52,29 +55,43 @@ class WorkspaceRepository
         Workspace::whereIn('id', $ids)
             ->delete();
     }
+
     public function paginateByUser(
         int $userId,
+        string $accessMode = 'owned',
         string $search = '',
         int $perPage = 12,
         string $filter = 'recent'
     ) {
         $query = Workspace::query()
-            ->withCount(['shares', 'collections as collections_count'])
-            ->where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->orWhereHas('shares', function ($shareQuery) use ($userId) {
-                        $shareQuery->where('shared_with_user_id', $userId);
-                    });
-            })
+            ->with('user')
+            ->withCount([
+                'shares',
+                'collections as collections_count',
+                'attachedMovies as movies_count',
+            ])
             ->when(
                 $search,
-                fn($query) =>
-                $query->where(
-                    'name',
-                    'LIKE',
-                    "%{$search}%"
-                )
+                fn ($query) =>
+                $query->where('name', 'LIKE', "%{$search}%")
             );
+
+        switch ($accessMode) {
+            case 'owned':
+                $query->where('user_id', $userId);
+                break;
+
+            case 'public':
+                $query->where('visibility', 'public')
+                    ->where('user_id', '!=', $userId);
+                break;
+
+            case 'shared':
+                $query->whereHas('shares', function ($shareQuery) use ($userId) {
+                    $shareQuery->where('shared_with_user_id', $userId);
+                });
+                break;
+        }
 
         switch ($filter) {
             case 'favorites':
@@ -84,12 +101,16 @@ class WorkspaceRepository
 
             case 'attached':
                 $query->where('user_id', $userId)
-                    ->whereHas('collections');
+                    ->where(function ($query) {
+                        $query->whereHas('collections')
+                            ->orWhereHas('attachedMovies');
+                    });
                 break;
 
             case 'unattached':
                 $query->where('user_id', $userId)
-                    ->whereDoesntHave('collections');
+                    ->whereDoesntHave('collections')
+                    ->whereDoesntHave('attachedMovies');
                 break;
 
             case 'recent':

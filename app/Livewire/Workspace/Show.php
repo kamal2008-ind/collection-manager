@@ -15,7 +15,7 @@ class Show extends Component
         $user = User::where('username', $username)->firstOrFail();
 
         $workspace = Workspace::query()
-            ->withCount(['collections as collections_count'])
+            ->withCount(['collections as collections_count', 'attachedMovies as movies_count'])
             ->where('user_id', $user->id)
             ->where('slug', $slug)
             ->firstOrFail();

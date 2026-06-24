@@ -5,6 +5,7 @@
             <x-workspace-card :workspace="$workspace" :selected="$selected" />
         </div>
     @empty
-        <div>No workspaces found.</div>
+        <div><x-empty-state icon="🎬" title="No workspaces found"
+                message="Try changing your search/filter/access mode or create a new workspace." /></div>
     @endforelse
 </div>

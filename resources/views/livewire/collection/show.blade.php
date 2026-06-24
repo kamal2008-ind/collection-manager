@@ -81,7 +81,9 @@
 
                     <div class="rounded-lg border p-4">
                         Movies
-                        <div class="text-2xl font-bold">0</div>
+                        <div class="text-2xl font-bold">
+                            {{ $collection->movies_count ?? 0 }}
+                        </div>
                     </div>
 
                     <div class="rounded-lg border p-4">

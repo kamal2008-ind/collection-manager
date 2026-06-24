@@ -91,7 +91,7 @@
             Collections ({{ $workspace->collections_count ?? 0 }})
         </div>
         <div>
-            Movies (0)
+            Movies ({{ $workspace->movies_count ?? 0 }})
         </div>
         <div>
             Books (0)
@@ -101,40 +101,14 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            @if ($workspace->visibility === 'public')
-                🌍 <span class="rounded bg-green-100 px-2 py-1 text-xs text-green-700">Public</span>
-            @elseif (($workspace->shares_count ?? 0) > 0)
-                👥 <span class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">Shared</span>
-            @else
-                🔒 <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">Private</span>
-            @endif
-            <span class="text-xs text-gray-500" title="Owner">
-                👤
-                {{ $workspace->user_id === auth()->id() ? 'Me' : '@' . $workspace->user->username }}
-            </span>
+            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0" />
+
+            <x-owner-badge :userid="$workspace->user_id" :username="$workspace->user->username" />
         </div>
 
         <div class="flex gap-2">
-            <span title="Likes">
-                ❤️ 0
-            </span>
-            @if ($workspace->visibility === 'public')
-                <button type="button" title="Copy Link" wire:click="copyShareLink({{ $workspace->id }})">
-                    🔗
-                </button>
-            @elseif($isOwner)
-                <button type="button" title="Share privately with user(s)"
-                    wire:click="openShareDrawer({{ $workspace->id }})">
-                    🤝 {{ $workspace->shares_count }}
-                </button>
-            @else
-                <span title="Shared count">
-                    🤝 {{ $workspace->shares_count ?? 0 }}
-                </span>
-            @endif
-            <a href="{{ $workspaceUrl }}" target="_blank" title="Open link">
-                ↗️
-            </a>
+            <x-card-footer-meta :visibility="$workspace->visibility" :assetId="$workspace->id" :isOwner="$isOwner" :shareCount="$workspace->shares_count"
+                :assetUrl="$workspaceUrl" />
         </div>
     </div>
 </div>

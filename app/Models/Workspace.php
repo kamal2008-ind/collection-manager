@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Movie;
 
 class Workspace extends Model
 {
@@ -90,5 +91,16 @@ class Workspace extends Model
         return $this->shares()
             ->where('shared_with_user_id', $user->id)
             ->exists();
+    }
+    public function attachedMovies()
+    {
+        return $this->morphedByMany(
+            Movie::class,
+            'attachable',
+            'attachments',
+            'container_id',
+            'attachable_id'
+        )->wherePivot('container_type', 'workspace')
+            ->wherePivot('attachable_type', 'movie');
     }
 }

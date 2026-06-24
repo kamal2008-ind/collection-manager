@@ -1,3 +1,7 @@
+@if ($workspaces->isEmpty())
+    <x-empty-state icon="🎬" title="No workspaces found"
+        message="Try changing your search/filter/access mode or create a new workspace." />
+@else
 <div class="columns-1 md:columns-2 xl:columns-3 gap-4 space-y-4">
     @forelse($workspaces as $workspace)
         <div wire:key="workspace-masonry-{{ $workspace->id }}"
@@ -8,3 +12,4 @@
         <div>No workspaces found.</div>
     @endforelse
 </div>
+@endif

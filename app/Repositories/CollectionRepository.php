@@ -6,7 +6,7 @@ use App\Models\Collection;
 
 class CollectionRepository
 {
-    public function create(array $data)
+    public function create(array $data): Collection
     {
         return Collection::create($data);
     }
@@ -55,28 +55,40 @@ class CollectionRepository
 
     public function paginateByUser(
         int $userId,
+        string $accessMode = 'owned',
         string $search = '',
         int $perPage = 12,
         string $filter = 'recent'
     ) {
         $query = Collection::query()
-            ->with(['user'])
+            ->with('user')
             ->withCount([
-                'attachedWorkspaces as workspaces_count',
                 'shares',
+                'attachedWorkspaces as workspaces_count',
+                'attachedMovies as movies_count',
             ])
-            ->where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->orWhereHas('shares', function ($shareQuery) use ($userId) {
-                        $shareQuery->where('shared_with_user_id', $userId);
-                    });
-            })
             ->when(
                 $search,
                 fn($query) =>
                 $query->where('name', 'LIKE', "%{$search}%")
             );
 
+        switch ($accessMode) {
+            case 'owned':
+                $query->where('user_id', $userId);
+                break;
+
+            case 'public':
+                $query->where('visibility', 'public')
+                    ->where('user_id', '!=', $userId);
+                break;
+
+            case 'shared':
+                $query->whereHas('shares', function ($shareQuery) use ($userId) {
+                    $shareQuery->where('shared_with_user_id', $userId);
+                });
+                break;
+        }
         switch ($filter) {
             case 'favorites':
                 $query->where('user_id', $userId)
@@ -85,12 +97,16 @@ class CollectionRepository
 
             case 'attached':
                 $query->where('user_id', $userId)
-                    ->whereHas('attachedWorkspaces');
+                    ->where(function ($query) {
+                        $query->whereHas('attachedWorkspaces')
+                            ->orWhereHas('attachedMovies');
+                    });
                 break;
 
             case 'unattached':
                 $query->where('user_id', $userId)
-                    ->whereDoesntHave('attachedWorkspaces');
+                    ->whereDoesntHave('attachedWorkspaces')
+                    ->whereDoesntHave('attachedMovies');
                 break;
 
             case 'recent':

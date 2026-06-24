@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Repositories\WorkspaceRepository;
 use Illuminate\Support\Str;
+use App\Models\Workspace;
 
 class WorkspaceService
 {
@@ -11,22 +12,23 @@ class WorkspaceService
         protected WorkspaceRepository $workspaceRepository
     ) {}
 
-    public function create(array $data)
+    public function create(array $data): Workspace
     {
         $data['slug'] = Str::slug($data['name']);
 
         return $this->workspaceRepository->create($data);
     }
 
-    public function findById(int $id)
+    public function findById(int $id): Workspace
     {
         return $this->workspaceRepository
             ->findById($id);
     }
 
-    public function update(int $id, array $data)
+    public function update(int $id, array $data): Workspace
     {
         $data['slug'] = Str::slug($data['name']);
+
         return $this->workspaceRepository
             ->update($id, $data);
     }
@@ -51,12 +53,14 @@ class WorkspaceService
     }
     public function getPaginatedWorkspaces(
         int $userId,
+        string $accessMode = 'owned',
         string $search = '',
         int $perPage = 12,
         string $filter = 'recent'
     ) {
         return $this->workspaceRepository->paginateByUser(
             $userId,
+            $accessMode,
             $search,
             $perPage,
             $filter

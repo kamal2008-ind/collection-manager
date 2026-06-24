@@ -49,10 +49,7 @@
                     </td>
                     {{-- Owner --}}
                     <td class="p-3 text-center">
-                        <div class="text-sm text-gray-500">
-                            👤
-                            {{ $workspace->user_id === auth()->id() ? 'Me' : '@' . $workspace->user->username }}
-                        </div>
+                        <x-owner-badge :userid="$workspace->user_id" :username="$workspace->user->username" :view="$view" />
                     </td>
                     {{-- Collections --}}
                     <td class="p-3 text-center">
@@ -60,7 +57,7 @@
                     </td>
                     {{-- Movies --}}
                     <td class="p-3 text-center">
-                        0
+                        {{ $workspace->movies_count ?? 0 }}
                     </td>
                     {{-- Books --}}
                     <td class="p-3 text-center">
@@ -69,35 +66,10 @@
                     {{-- Status --}}
                     <td class="p-3">
                         <div class="flex items-center justify-center gap-3">
-                            @if ($workspace->visibility === 'public')
-                                <span title="Public"> 🌍 </span>
-                            @elseif (($workspace->shares_count ?? 0) > 0)
-                                <span title="Shared"> 👥 </span>
-                            @else
-                                <span title="Private"> 🔒 </span>
-                            @endif
-                            <span title="Likes">
-                                ❤️ 0
-                            </span>
+                            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0" :view="$view" />
 
-                            @if ($workspace->visibility === 'public')
-                                <button type="button" title="Copy link"
-                                    wire:click="copyShareLink({{ $workspace->id }})">
-                                    🔗
-                                </button>
-                            @elseif($isOwner)
-                                <button type="button" title="Share privately with user(s)"
-                                    wire:click="openShareDrawer({{ $workspace->id }})">
-                                    🤝 {{ $workspace->shares_count }}
-                                </button>
-                            @else
-                                <span title="Shared count">
-                                    🤝 {{ $workspace->shares_count ?? 0 }}
-                                </span>
-                            @endif
-                            <a href="{{ $workspaceUrl }}" target="_blank" title="Open link">
-                                ↗️
-                            </a>
+                            <x-card-footer-meta :visibility="$workspace->visibility" :assetId="$workspace->id" :isOwner="$isOwner" :shareCount="$workspace->shares_count"
+                                :assetUrl="$workspaceUrl" />
                         </div>
                     </td>
                     {{-- Actions --}}
@@ -142,7 +114,7 @@
                                             <span>Remove Items</span>
                                         </button>
 
-                                        <div class="border-t"></div>                                        {{-- Duplicate --}}
+                                        <div class="border-t"></div> {{-- Duplicate --}}
                                         <button type="button" wire:click="duplicateWorkspace({{ $workspace->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>📋</span>
@@ -169,7 +141,8 @@
             @empty
                 <tr>
                     <td colspan="8" class="p-6 text-center">
-                        No workspaces found.
+                        <x-empty-state icon="🎬" title="No workspaces found"
+                            message="Try changing your search/filter/access mode or create a new workspace." />
                     </td>
                 </tr>
             @endforelse
