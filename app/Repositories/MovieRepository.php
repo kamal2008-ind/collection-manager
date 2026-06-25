@@ -4,12 +4,31 @@ namespace App\Repositories;
 
 use App\Models\Movie;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class MovieRepository
 {
     public function create(array $data): Movie
     {
-        return Movie::create($data);
+        $title = trim($data['title']);
+
+        return Movie::create([
+            'user_id' => $data['user_id'] ?? Auth::id(),
+            'title' => $title,
+            'slug' => $this->makeUniqueSlug(
+                $title,
+                $data['user_id'] ?? Auth::id()
+            ),
+            'year' => $data['year'] ?? null,
+            'description' => $data['description'] ?? null,
+            'poster_path' => $data['poster_path'] ?? null,
+            'tmdb_id' => $data['tmdb_id'] ?? null,
+            'imdb_id' => $data['imdb_id'] ?? null,
+            'visibility' => $data['visibility'] ?? 'private',
+            'is_favorite' => $data['is_favorite'] ?? false,
+            'sort_order' => $data['sort_order'] ?? 0,
+        ]);
     }
 
     public function findById(int $id): Movie
@@ -21,7 +40,22 @@ class MovieRepository
     {
         $movie = Movie::findOrFail($id);
 
-        $movie->update($data);
+        $title = trim($data['title']);
+
+        $movie->update([
+            'title' => $title,
+            'slug' => $movie->title !== $title
+                ? $this->makeUniqueSlug($title, $movie->user_id, $movie->id)
+                : $movie->slug,
+            'year' => $data['year'] ?? null,
+            'description' => $data['description'] ?? null,
+            'poster_path' => array_key_exists('poster_path', $data)
+                ? $data['poster_path']
+                : $movie->poster_path,
+            'tmdb_id' => $data['tmdb_id'] ?? null,
+            'imdb_id' => $data['imdb_id'] ?? null,
+            'visibility' => $data['visibility'] ?? $movie->visibility,
+        ]);
 
         return $movie;
     }
@@ -95,9 +129,11 @@ class MovieRepository
                 $query->whereRaw('1 = 0');
                 break;
         }
+
         switch ($filter) {
             case 'favorites':
-                $query->where('user_id', $userId)->where('is_favorite', true);
+                $query->where('user_id', $userId)
+                    ->where('is_favorite', true);
                 break;
 
             case 'attached':
@@ -122,5 +158,28 @@ class MovieRepository
         return $query
             ->latest()
             ->paginate($perPage);
+    }
+
+    private function makeUniqueSlug(
+        string $title,
+        int $userId,
+        ?int $ignoreId = null
+    ): string {
+        $baseSlug = Str::slug($title);
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (
+            Movie::query()
+                ->where('user_id', $userId)
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }
