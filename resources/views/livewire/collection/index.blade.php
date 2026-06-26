@@ -73,6 +73,8 @@
     @include('livewire.collection.partials.drawer')
     @include('livewire.collection.partials.delete-modal')
     @include('livewire.collection.partials.share-drawer')
+    @include('livewire.collection.partials.add-items-drawer')
+    @include('livewire.collection.partials.remove-items-drawer')
     @include('livewire.collection.partials.attach-to-drawer')
     @include('livewire.collection.partials.detach-from-drawer')
 </div>

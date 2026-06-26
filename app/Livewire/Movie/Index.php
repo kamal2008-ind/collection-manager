@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use App\Services\MovieShareService;
 
 class Index extends Component
 {
@@ -24,71 +25,62 @@ class Index extends Component
     public int $perPage = 12;
     public string $view = 'card';
     public string $paginationMode = 'pages';
-
     public bool $showDrawer = false;
     public string $drawerMode = 'create';
-
     public ?int $movieId = null;
-
     public string $title = '';
     public ?int $year = null;
     public string $description = '';
     public ?int $tmdb_id = null;
     public ?string $imdb_id = null;
-
     public $image;
     public ?string $currentPoster = null;
     public bool $removePoster = false;
-
     public string $visibility = 'private';
-
     public array $selected = [];
-
     public bool $showDeleteModal = false;
     public ?int $deleteMovieId = null;
     public ?string $deleteMovieTitle = null;
-
     public int $drawerPerPage = 12;
-
     public bool $attachToDrawerOpen = false;
     public bool $isBulkAttachMode = false;
     public ?int $attachToMovieId = null;
     public ?string $attachToMovieName = null;
-
     public string $attachTargetType = 'workspace';
     public string $attachSearch = '';
-
     public array $workspaceOptions = [];
     public array $collectionOptions = [];
-
     public array $attachedWorkspaceIds = [];
     public array $attachedCollectionIds = [];
-
     public array $selectedWorkspaceIds = [];
     public array $selectedCollectionIds = [];
-
     public bool $detachFromDrawerOpen = false;
     public ?int $detachFromMovieId = null;
     public ?string $detachFromMovieName = null;
-
     public string $detachTargetType = 'workspace';
     public string $detachSearch = '';
-
     public array $detachWorkspaceOptions = [];
     public array $detachCollectionOptions = [];
-
     public array $selectedDetachWorkspaceIds = [];
     public array $selectedDetachCollectionIds = [];
+    public bool $shareDrawerOpen = false;
+    public ?Movie $sharingMovie = null;
+    public string $shareSearch = '';
+    public array $shareSearchResults = [];
+    public array $sharedUsers = [];
 
     protected MovieService $movieService;
     protected AttachmentService $attachmentService;
+    protected MovieShareService $movieShareService;
 
     public function boot(
         MovieService $movieService,
-        AttachmentService $attachmentService
+        AttachmentService $attachmentService,
+        MovieShareService $movieShareService
     ): void {
         $this->movieService = $movieService;
         $this->attachmentService = $attachmentService;
+        $this->movieShareService = $movieShareService;
     }
 
     protected function rules(): array
@@ -725,6 +717,97 @@ class Index extends Component
     public function movieSettings(int $movieId): void
     {
         $this->dispatch('toast', message: 'Movie settings coming soon.', type: 'info');
+    }
+    public function openShareDrawer(int $movieId): void
+    {
+        $this->sharingMovie = $this->abortIfNotOwner($movieId);
+
+        $this->shareDrawerOpen = true;
+        $this->shareSearch = '';
+        $this->shareSearchResults = [];
+
+        $this->loadSharedUsers();
+    }
+
+    public function updatedShareSearch(): void
+    {
+        if (! $this->sharingMovie) {
+            return;
+        }
+
+        $this->shareSearchResults = $this->movieShareService
+            ->searchUsers($this->sharingMovie, $this->shareSearch)
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    public function shareWithUser(int $userId): void
+    {
+        if (! $this->sharingMovie) {
+            return;
+        }
+
+        $this->movieShareService->shareWithUser(
+            $this->sharingMovie,
+            $userId
+        );
+
+        $this->shareSearch = '';
+        $this->shareSearchResults = [];
+
+        $this->loadSharedUsers();
+
+        $this->dispatch('toast', message: 'Movie shared successfully.', type: 'success');
+    }
+
+    public function removeSharedUser(int $userId): void
+    {
+        if (! $this->sharingMovie) {
+            return;
+        }
+
+        $this->movieShareService->removeShare(
+            $this->sharingMovie,
+            $userId
+        );
+
+        $this->loadSharedUsers();
+
+        $this->dispatch('toast', message: 'Movie share removed.', type: 'success');
+    }
+
+    public function closeShareDrawer(): void
+    {
+        $this->shareDrawerOpen = false;
+        $this->sharingMovie = null;
+        $this->shareSearch = '';
+        $this->shareSearchResults = [];
+        $this->sharedUsers = [];
+    }
+
+    private function loadSharedUsers(): void
+    {
+        if (! $this->sharingMovie) {
+            $this->sharedUsers = [];
+            return;
+        }
+
+        $this->sharedUsers = $this->movieShareService
+            ->getSharedUsers($this->sharingMovie)
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ])
+            ->values()
+            ->toArray();
     }
     public function copyShareLink(int $movieId): void
     {

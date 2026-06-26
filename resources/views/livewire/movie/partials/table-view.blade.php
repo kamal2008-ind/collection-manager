@@ -72,6 +72,7 @@
 
                     <td class="p-3">
                         <div class="flex justify-end items-center gap-3">
+
                             @if ($isOwner)
                                 <button title="{{ $movie->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
                                     wire:click="toggleFavorite({{ $movie->id }})">
@@ -80,10 +81,6 @@
                                     @else
                                         <span class="text-2xl">☆</span>
                                     @endif
-                                </button>
-
-                                <button title="Attach To" wire:click="openAttachToDrawer({{ $movie->id }})">
-                                    📎
                                 </button>
 
                                 <button title="Edit" wire:click="editMovie({{ $movie->id }})">
@@ -139,20 +136,6 @@
                                     </div>
                                 </div>
                             @else
-                                <button title="{{ $movie->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
-                                    wire:click="toggleFavorite({{ $movie->id }})">
-                                    @if ($movie->is_favorite)
-                                        ⭐
-                                    @else
-                                        <span class="text-2xl">☆</span>
-                                    @endif
-                                </button>
-
-                                <button type="button" title="Copy link"
-                                    wire:click="copyMovieUrl({{ $movie->id }})">
-                                    🔗
-                                </button>
-
                                 <span class="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
                                     View only
                                 </span>

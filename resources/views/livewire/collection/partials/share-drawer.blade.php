@@ -25,10 +25,17 @@
                 <label class="mb-2 block text-base font-medium text-gray-900">
                     Search user by name, username or email
                 </label>
-
-                <input type="text" wire:model.live.debounce.400ms="shareSearch" placeholder="Start typing..."
-                    class="w-full rounded-lg border border-gray-400 px-4 py-3 text-base focus:border-blue-600 focus:ring-blue-600">
-
+                <div class="relative">
+                    <input type="text" wire:model.live.debounce.400ms="shareSearch" placeholder="Start typing..."
+                        class="w-full rounded-lg border border-gray-400 px-4 py-3 text-base focus:border-blue-600 focus:ring-blue-600">
+                    @if ($shareSearch)
+                        <button type="button" wire:click="$set('shareSearch', '')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                            title="Clear search">
+                            ✕
+                        </button>
+                    @endif
+                </div>
                 @if (!empty($shareSearchResults))
                     <div class="mt-4 overflow-hidden rounded-lg border bg-white">
                         @foreach ($shareSearchResults as $user)

@@ -10,7 +10,7 @@
 <span title="Likes">
     ❤️ {{ $likeCount }}
 </span>
-@if ($visibility === 'public' || $module === 'movie')
+@if ($visibility === 'public')
     <button type="button" title="Copy Link" wire:click="copyShareLink({{ $assetId }})">
         🔗
     </button>

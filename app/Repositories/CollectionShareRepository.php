@@ -16,7 +16,7 @@ class CollectionShareRepository
             ->get();
     }
 
-    public function searchUsers(string $search, int $ownerId): EloquentCollection
+    public function searchUsers(string $search, int $ownerId, Collection $collection): EloquentCollection
     {
         return User::query()
             ->where('id', '!=', $ownerId)
@@ -25,6 +25,7 @@ class CollectionShareRepository
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('username', 'like', "%{$search}%");
             })
+            ->whereNotIn('id', $collection->shares()->pluck('shared_with_user_id'))
             ->limit(8)
             ->get();
     }

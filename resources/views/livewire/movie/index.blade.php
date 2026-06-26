@@ -70,6 +70,7 @@
 
     @include('livewire.movie.partials.drawer')
     @include('livewire.movie.partials.delete-modal')
+    @include('livewire.movie.partials.share-drawer')
     @include('livewire.movie.partials.attach-to-drawer')
     @include('livewire.movie.partials.detach-from-drawer')
 </div>

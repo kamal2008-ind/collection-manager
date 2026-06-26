@@ -100,6 +100,7 @@ class MovieRepository
         $query = Movie::query()
             ->with(['user'])
             ->withCount([
+                'shares',
                 'attachedWorkspaces as workspaces_count',
                 'attachedCollections as collections_count',
             ])
@@ -126,7 +127,9 @@ class MovieRepository
                 break;
 
             case 'shared':
-                $query->whereRaw('1 = 0');
+                $query->whereHas('shares', function ($shareQuery) use ($userId) {
+                    $shareQuery->where('shared_with_user_id', $userId);
+                });
                 break;
         }
 
@@ -171,10 +174,10 @@ class MovieRepository
 
         while (
             Movie::query()
-                ->where('user_id', $userId)
-                ->where('slug', $slug)
-                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-                ->exists()
+            ->where('user_id', $userId)
+            ->where('slug', $slug)
+            ->when($ignoreId, fn($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()
         ) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;

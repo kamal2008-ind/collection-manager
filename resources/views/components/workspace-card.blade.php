@@ -86,15 +86,15 @@
     </div>
 
     {{-- Body --}}
-    <div class="mt-4 space-y-2 text-sm">
+    <div class="mt-4 space-y-2 text-sm items-center">
         <div>
-            Collections ({{ $workspace->collections_count ?? 0 }})
+            📁 Collections ({{ $workspace->collections_count ?? 0 }})
         </div>
         <div>
-            Movies ({{ $workspace->movies_count ?? 0 }})
+            🎬 Movies ({{ $workspace->movies_count ?? 0 }})
         </div>
         <div>
-            Books (0)
+            📘 Books (0)
         </div>
     </div>
 

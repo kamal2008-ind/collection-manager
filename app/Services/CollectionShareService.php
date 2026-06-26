@@ -30,7 +30,8 @@ class CollectionShareService
 
         return $this->collectionShareRepository->searchUsers(
             trim($search),
-            $collection->user_id
+            $collection->user_id,
+            $collection
         );
     }
 

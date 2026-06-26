@@ -8,8 +8,6 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use App\Models\Workspace;
-use App\Models\Movie;
-use App\Models\Attachment;
 use App\Services\AttachmentService;
 use App\Services\CollectionShareService;
 use Illuminate\Validation\Rule;
@@ -66,13 +64,10 @@ class Index extends Component
     public string $removeMovieSearch = '';
     public array $movieOptions = [];
     public array $removeMovieOptions = [];
-    public array $addedMovieIds = [];
     public array $selectedMovieIds = [];
     public array $selectedRemoveMovieIds = [];
     public ?int $addItemsCollectionId = null;
-    public ?string $addItemsCollectionName = null;
     public ?int $removeItemsCollectionId = null;
-    public ?string $removeItemsCollectionName = null;
 
     protected CollectionService $collectionService;
     protected AttachmentService $attachmentService;
@@ -625,196 +620,6 @@ class Index extends Component
 
         $this->dispatch('toast', message: 'Selected workspace(s) detached from collection.', type: 'success');
     }
-
-    public function openAddItemsDrawer(int $collectionId): void
-    {
-        $collection = $this->abortIfNotOwner($collectionId);
-
-        $this->addItemsCollectionId = $collection->id;
-        $this->addItemsCollectionName = $collection->name;
-        $this->addItemsType = 'movies';
-        $this->drawerPerPage = 12;
-
-        $this->movieOptions = Movie::query()
-            ->where('user_id', auth()->id())
-            ->orderBy('title')
-            ->get(['id', 'title'])
-            ->map(fn($movie) => [
-                'id' => $movie->id,
-                'name' => $movie->title,
-            ])
-            ->toArray();
-
-        $this->addedMovieIds = Attachment::query()
-            ->where('container_type', 'collection')
-            ->where('container_id', $collection->id)
-            ->where('attachable_type', 'movie')
-            ->pluck('attachable_id')
-            ->map(fn($id) => (int) $id)
-            ->toArray();
-
-        $this->selectedMovieIds = [];
-        $this->movieSearch = '';
-        $this->addItemsDrawerOpen = true;
-    }
-
-    public function closeAddItemsDrawer(): void
-    {
-        $this->addItemsDrawerOpen = false;
-        $this->addItemsCollectionId = null;
-        $this->addItemsCollectionName = null;
-        $this->addItemsType = 'movies';
-        $this->movieOptions = [];
-        $this->addedMovieIds = [];
-        $this->selectedMovieIds = [];
-        $this->movieSearch = '';
-        $this->drawerPerPage = 12;
-    }
-
-    public function addSelectedItems(): void
-    {
-        if (! $this->addItemsCollectionId) {
-            return;
-        }
-
-        if (empty($this->selectedMovieIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
-            return;
-        }
-
-        foreach ($this->selectedMovieIds as $movieId) {
-            $this->attachmentService->attachMovieToCollections(
-                (int) $movieId,
-                [$this->addItemsCollectionId]
-            );
-        }
-
-        $this->addedMovieIds = Attachment::query()
-            ->where('container_type', 'collection')
-            ->where('container_id', $this->addItemsCollectionId)
-            ->where('attachable_type', 'movie')
-            ->pluck('attachable_id')
-            ->map(fn($id) => (int) $id)
-            ->toArray();
-
-        $this->selectedMovieIds = [];
-        $this->movieSearch = '';
-
-        $this->dispatch('toast', message: 'Movie(s) added to collection successfully.', type: 'success');
-    }
-
-    public function detachMovieItem(int $movieId): void
-    {
-        if (! $this->addItemsCollectionId) {
-            return;
-        }
-
-        $this->attachmentService->detachMovieFromCollection(
-            $movieId,
-            $this->addItemsCollectionId
-        );
-
-        $this->addedMovieIds = Attachment::query()
-            ->where('container_type', 'collection')
-            ->where('container_id', $this->addItemsCollectionId)
-            ->where('attachable_type', 'movie')
-            ->pluck('attachable_id')
-            ->map(fn($id) => (int) $id)
-            ->toArray();
-
-        $this->dispatch('toast', message: 'Movie detached from collection.', type: 'success');
-    }
-
-    public function openRemoveItemsDrawer(int $collectionId): void
-    {
-        $collection = $this->abortIfNotOwner($collectionId);
-
-        $this->removeItemsCollectionId = $collection->id;
-        $this->removeItemsCollectionName = $collection->name;
-        $this->removeItemsType = 'movies';
-        $this->drawerPerPage = 12;
-
-        $this->removeMovieOptions = Movie::query()
-            ->where('user_id', auth()->id())
-            ->whereHas('attachedCollections', function ($query) use ($collection) {
-                $query->where('container_id', $collection->id);
-            })
-            ->orderBy('title')
-            ->get(['id', 'title'])
-            ->map(fn($movie) => [
-                'id' => $movie->id,
-                'name' => $movie->title,
-            ])
-            ->toArray();
-
-        $this->selectedRemoveMovieIds = [];
-        $this->removeMovieSearch = '';
-        $this->removeItemsDrawerOpen = true;
-    }
-
-    public function closeRemoveItemsDrawer(): void
-    {
-        $this->removeItemsDrawerOpen = false;
-        $this->removeItemsCollectionId = null;
-        $this->removeItemsCollectionName = null;
-        $this->removeItemsType = 'movies';
-        $this->removeMovieOptions = [];
-        $this->selectedRemoveMovieIds = [];
-        $this->removeMovieSearch = '';
-        $this->drawerPerPage = 12;
-    }
-
-    public function detachMovieFromRemoveDrawer(int $movieId): void
-    {
-        if (! $this->removeItemsCollectionId) {
-            return;
-        }
-
-        $this->attachmentService->detachMovieFromCollection(
-            $movieId,
-            $this->removeItemsCollectionId
-        );
-
-        $this->removeMovieOptions = collect($this->removeMovieOptions)
-            ->reject(fn($movie) => (int) $movie['id'] === $movieId)
-            ->values()
-            ->toArray();
-
-        $this->selectedRemoveMovieIds = array_values(
-            array_diff($this->selectedRemoveMovieIds, [$movieId])
-        );
-
-        $this->dispatch('toast', message: 'Movie detached from collection.', type: 'success');
-    }
-
-    public function removeSelectedItems(): void
-    {
-        if (! $this->removeItemsCollectionId) {
-            return;
-        }
-
-        if (empty($this->selectedRemoveMovieIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
-            return;
-        }
-
-        foreach ($this->selectedRemoveMovieIds as $movieId) {
-            $this->attachmentService->detachMovieFromCollection(
-                (int) $movieId,
-                $this->removeItemsCollectionId
-            );
-        }
-
-        $this->removeMovieOptions = collect($this->removeMovieOptions)
-            ->whereNotIn('id', $this->selectedRemoveMovieIds)
-            ->values()
-            ->toArray();
-
-        $this->selectedRemoveMovieIds = [];
-
-        $this->dispatch('toast', message: 'Selected movie(s) removed from collection.', type: 'success');
-    }
-
     public function setAccessMode(string $mode): void
     {
         if (! in_array($mode, ['owned', 'shared', 'public'], true)) {

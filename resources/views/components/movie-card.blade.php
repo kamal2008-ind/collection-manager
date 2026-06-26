@@ -11,7 +11,6 @@
     @php
         $isOwner = auth()->id() === $movie->user_id;
         $movieUrl = url('/u/' . $movie->user->username . '/movies/' . $movie->slug);
-        $module = 'movie';
     @endphp
 
     {{-- Header --}}
@@ -23,7 +22,7 @@
             @endif
 
             <span title="{{ $movie->title }}"
-                class="truncate max-w-[260px] font-medium hover:shadow-md hover:border-gray-300 transition">
+                class="truncate max-w-[240px] font-medium hover:shadow-md hover:border-gray-300 transition">
                 {{ $movie->title }}
             </span>
         </div>
@@ -92,6 +91,10 @@
                         </button>
                     </div>
                 </div>
+            @else
+                <span class="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">
+                    View only
+                </span>
             @endif
         </div>
     </div>
@@ -130,15 +133,17 @@
 
             <div class="mt-auto flex flex-nowrap items-center gap-3 text-xs text-gray-600">
                 <span class="whitespace-nowrap" title="Attached workspaces">
-                    🏢 <span
-                        class="rounded bg-purple-100 px-1 py-1 text-xs text-purple-700">{{ $movie->workspaces_count ?? 0 }}
-                        Workspaces </span>
+                    🏢
+                    {{-- <span class="rounded bg-purple-100 px-1 py-1 text-xs text-purple-700"> --}}
+                        Workspaces ({{ $movie->workspaces_count ?? 0 }})
+                    {{-- </span> --}}
                 </span>
 
                 <span class="whitespace-nowrap" title="Attached collections">
-                    📁 <span
-                        class="rounded bg-yellow-100 px-1 py-1 text-xs text-yellow-700">{{ $movie->collections_count ?? 0 }}
-                        Collections </span>
+                    📁
+                    {{-- <span class="rounded bg-yellow-100 px-1 py-1 text-xs text-yellow-700"> --}}
+                        Collections ({{ $movie->collections_count ?? 0 }})
+                    {{-- </span> --}}
                 </span>
             </div>
         </div>
@@ -153,8 +158,8 @@
         </div>
 
         <div class="flex gap-2">
-            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner"
-                :assetUrl="$movieUrl" :module="$module"/>
+            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :shareCount="$movie->shares_count"
+            :assetUrl="$movieUrl" />
         </div>
     </div>
 </div>

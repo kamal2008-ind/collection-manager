@@ -51,6 +51,17 @@
                         x-transition
                         class="absolute right-0 z-[9999] mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
                         <div class="my-1 border-t"></div>
+                        <button type="button" wire:click="openAddItemsDrawer({{ $collection->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
+                            <span>➕</span>
+                            <span>Add Items</span>
+                        </button>
+                        <button type="button" wire:click="openRemoveItemsDrawer({{ $collection->id }})"
+                            class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-red-50 text-red-600">
+                            <span>➖</span>
+                            <span>Remove Items</span>
+                        </button>
+                        <div class="my-1 border-t"></div>
                         <button type="button" wire:click="openAttachToDrawer({{ $collection->id }})"
                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                             <span>📎</span>
@@ -85,15 +96,15 @@
     </div>
 
     {{-- Body --}}
-    <div class="mt-4 space-y-2 text-sm">
+    <div class="mt-4 space-y-2 text-sm items-center">
         <div>
-            Workspaces ({{ $collection->workspaces_count ?? 0 }})
+            🏢 Workspaces ({{ $collection->workspaces_count ?? 0 }})
         </div>
         <div>
-            Movies ({{ $collection->movies_count ?? 0 }})
+            🎬 Movies ({{ $collection->movies_count ?? 0 }})
         </div>
         <div>
-            Books (0)
+            📘 Books (0)
         </div>
     </div>
 
@@ -107,8 +118,7 @@
 
         <div class="flex gap-2">
             <x-card-footer-meta :visibility="$collection->visibility" :assetId="$collection->id" :isOwner="$isOwner"
-                :shareCount="$collection->shares_count"
-                :assetUrl="$collectionUrl" />
+                :shareCount="$collection->shares_count" :assetUrl="$collectionUrl" />
         </div>
     </div>
 </div>

@@ -16,7 +16,7 @@ class WorkspaceShareRepository
             ->get();
     }
 
-    public function searchUsers(string $search, int $ownerId): Collection
+    public function searchUsers(string $search, int $ownerId, Workspace $workspace): Collection
     {
         return User::query()
             ->where('id', '!=', $ownerId)
@@ -25,6 +25,7 @@ class WorkspaceShareRepository
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('username', 'like', "%{$search}%");
             })
+            ->whereNotIn('id', $workspace->shares()->pluck('shared_with_user_id'))
             ->limit(8)
             ->get();
     }

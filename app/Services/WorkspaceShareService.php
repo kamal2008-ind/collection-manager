@@ -31,7 +31,8 @@ class WorkspaceShareService
 
         return $this->workspaceShareRepository->searchUsers(
             trim($search),
-            $workspace->user_id
+            $workspace->user_id,
+            $workspace
         );
     }
 
