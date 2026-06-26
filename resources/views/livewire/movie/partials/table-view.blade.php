@@ -18,7 +18,6 @@
                 @php
                     $isOwner = auth()->id() === $movie->user_id;
                     $movieUrl = url('/u/' . $movie->user->username . '/movies/' . $movie->slug);
-                    $module = 'movie';
                 @endphp
 
                 <tr wire:key="movie-table-{{ $movie->id }}" class="border-t hover:bg-gray-50">
@@ -63,10 +62,10 @@
 
                     <td class="p-3">
                         <div class="flex items-center justify-center gap-3">
-                            <x-status-badge :visibility="$movie->visibility" :view="$view" />
+                            <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0" :view="$view" />
 
-                            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :assetUrl="$movieUrl"
-                                :module="$module" />
+                            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner"
+                                :assetUrl="$movieUrl" />
                         </div>
                     </td>
 

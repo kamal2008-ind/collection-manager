@@ -90,7 +90,7 @@
                                 <button title="Move to Trash" wire:click="confirmDelete({{ $workspace->id }})">
                                     🗑️
                                 </button>
-                                <div class="relative">
+                                <div class="relative" x-on:close-more-menu.window="activeMenu = null">
                                     <button
                                         @click.stop="activeMenu = activeMenu === {{ $workspace->id }} ? null : {{ $workspace->id }}"
                                         class="rounded

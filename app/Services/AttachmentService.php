@@ -247,4 +247,29 @@ class AttachmentService
 
         abort_if($count !== count($ids), 403);
     }
+    public function copyWorkspaceAttachments(
+        int $fromWorkspaceId,
+        int $toWorkspaceId
+    ): void {
+        $this->ensureOwnWorkspace($fromWorkspaceId);
+        $this->ensureOwnWorkspace($toWorkspaceId);
+
+        $this->attachmentRepository->copyWorkspaceAttachments(
+            $fromWorkspaceId,
+            $toWorkspaceId
+        );
+    }
+
+    public function copyCollectionMovieAttachments(
+        int $fromCollectionId,
+        int $toCollectionId
+    ): void {
+        $this->ensureOwnCollection($fromCollectionId);
+        $this->ensureOwnCollection($toCollectionId);
+
+        $this->attachmentRepository->copyCollectionMovieAttachments(
+            $fromCollectionId,
+            $toCollectionId
+        );
+    }
 }

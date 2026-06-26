@@ -438,7 +438,12 @@ class Index extends Component
 
     public function duplicateCollection(int $collectionId): void
     {
-        $this->dispatch('toast', message: 'Duplicate collection feature coming soon.', type: 'info');
+        $collection = $this->abortIfNotOwner($collectionId);
+
+        $duplicatedCollection = $this->collectionService->duplicate($collection->id);
+
+        $this->dispatch('toast', message: 'Collection duplicated as "' . $duplicatedCollection->name . '".', type: 'success');
+        $this->dispatch('close-more-menu');
     }
 
     public function collectionStatistics(int $collectionId): void

@@ -20,7 +20,7 @@ class AttachmentRepository
             ->where('attachable_type', $attachableType)
             ->where('attachable_id', $attachableId)
             ->pluck('container_id')
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->toArray();
     }
 
@@ -175,7 +175,6 @@ class AttachmentRepository
             $movieId
         );
     }
-
     public function detachMovieFromWorkspace(int $workspaceId, int $movieId): void
     {
         $this->detach(
@@ -185,7 +184,6 @@ class AttachmentRepository
             $movieId
         );
     }
-
     public function detachMovieFromCollection(int $collectionId, int $movieId): void
     {
         $this->detach(
@@ -194,5 +192,45 @@ class AttachmentRepository
             'movie',
             $movieId
         );
+    }
+    public function copyWorkspaceAttachments(
+        int $fromWorkspaceId,
+        int $toWorkspaceId
+    ): void {
+        $attachments = Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $fromWorkspaceId)
+            ->get(['attachable_type', 'attachable_id']);
+
+        foreach ($attachments as $attachment) {
+            $this->attach(
+                'workspace',
+                $toWorkspaceId,
+                $attachment->attachable_type,
+                (int) $attachment->attachable_id
+            );
+        }
+    }
+
+    public function copyCollectionMovieAttachments(
+        int $fromCollectionId,
+        int $toCollectionId
+    ): void {
+        $movieIds = Attachment::query()
+            ->where('container_type', 'collection')
+            ->where('container_id', $fromCollectionId)
+            ->where('attachable_type', 'movie')
+            ->pluck('attachable_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
+        foreach ($movieIds as $movieId) {
+            $this->attach(
+                'collection',
+                $toCollectionId,
+                'movie',
+                $movieId
+            );
+        }
     }
 }

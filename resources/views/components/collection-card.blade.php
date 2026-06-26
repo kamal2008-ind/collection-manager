@@ -40,7 +40,7 @@
                 <button title="Move to trash" wire:click="confirmDelete({{ $collection->id }})">
                     🗑️
                 </button>
-                <div class="relative">
+                <div class="relative" x-on:close-more-menu.window="activeMenu = null">
                     <button type="button"
                         @click.stop="activeMenu = activeMenu === 'collection-{{ $collection->id }}' ? null : 'collection-{{ $collection->id }}'"
                         class="rounded p-1 hover:bg-gray-100" title="More actions">
@@ -111,7 +111,7 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            <x-status-badge :visibility="$collection->visibility" :shared="($collection->shares_count ?? 0) > 0" />
+            <x-status-badge :visibility="$collection->visibility" :shared="($collection->shares_count ?? 0) > 0"/>
 
             <x-owner-badge :userid="$collection->user_id" :username="$collection->user->username" />
         </div>

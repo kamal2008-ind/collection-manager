@@ -39,7 +39,7 @@
                 <button title="Move to trash" wire:click="confirmDelete({{ $workspace->id }})">
                     🗑️
                 </button>
-                <div class="relative">
+                <div class="relative" x-on:close-more-menu.window="activeMenu = null">
                     <button type="button"
                         @click.stop="activeMenu = activeMenu === 'workspace-{{ $workspace->id }}' ? null : 'workspace-{{ $workspace->id }}'"
                         class="rounded p-1 hover:bg-gray-100" title="More actions">
@@ -101,7 +101,7 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0" />
+            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0"/>
 
             <x-owner-badge :userid="$workspace->user_id" :username="$workspace->user->username" />
         </div>

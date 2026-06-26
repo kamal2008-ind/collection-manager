@@ -71,7 +71,7 @@
                                 <button title="Move to Trash" wire:click="confirmDelete({{ $collection->id }})">
                                     🗑️
                                 </button>
-                                <div class="relative">
+                                <div class="relative" x-on:close-more-menu.window="activeMenu = null">
                                     <button type="button"
                                         @click.stop="activeMenu = activeMenu === 'collection-{{ $collection->id }}' ? null : 'collection-{{ $collection->id }}'"
                                         class="rounded p-1 hover:bg-gray-100" title="More actions">

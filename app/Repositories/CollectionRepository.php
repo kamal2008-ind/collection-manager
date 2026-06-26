@@ -52,7 +52,44 @@ class CollectionRepository
         Collection::whereIn('id', $ids)
             ->delete();
     }
+    public function duplicate(int $collectionId): Collection
+    {
+        $collection = Collection::findOrFail($collectionId);
 
+        $newName = $this->makeUniqueCopyName(
+            $collection->name,
+            $collection->user_id
+        );
+
+        return Collection::create([
+            'user_id' => $collection->user_id,
+            'name' => $newName,
+            'slug' => \Illuminate\Support\Str::slug($newName),
+            'description' => $collection->description,
+            'image' => $collection->image,
+            'visibility' => 'private',
+            'is_favorite' => false,
+        ]);
+    }
+
+    private function makeUniqueCopyName(string $name, int $userId): string
+    {
+        $baseName = trim($name) . ' - Copy';
+        $newName = $baseName;
+        $counter = 2;
+
+        while (
+            Collection::query()
+            ->where('user_id', $userId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($newName))])
+            ->exists()
+        ) {
+            $newName = $baseName . ' ' . $counter;
+            $counter++;
+        }
+
+        return $newName;
+    }
     public function paginateByUser(
         int $userId,
         string $accessMode = 'owned',

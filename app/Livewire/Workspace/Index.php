@@ -425,11 +425,12 @@ class Index extends Component
     }
     public function duplicateWorkspace(int $workspaceId): void
     {
-        // session()->flash(
-        //     'success',
-        //     'Duplicate workspace feature coming soon.'
-        // );
-        $this->dispatch('toast', message: 'Duplicate workspace feature coming soon.', type: 'info');
+        $workspace = $this->abortIfNotOwner($workspaceId);
+
+        $duplicatedWorkspace = $this->workspaceService->duplicate($workspace->id);
+
+        $this->dispatch('toast', message: 'Workspace duplicated as "' . $duplicatedWorkspace->name . '".', type: 'success');
+        $this->dispatch('close-more-menu');
     }
 
     public function copyWorkspaceUrl(int $workspaceId): void

@@ -1,6 +1,9 @@
-1. Collection -> Add Items -> Remove Items
-2. More menu component
-3. Favorite morph table
-4. Movie share drawer
-5. Movie statistics and settings
+1. More menu component
+2. Favorite morph table
+3. Movie statistics and settings
+4. Mobile view
+1) No more workspaces. No more collections. no more movies. - message should be display at end of the page.
+2) Movie card - workspaces (2) collections (2) - should be display proper.
+5. Community likes
+
 

@@ -55,7 +55,44 @@ class WorkspaceRepository
         Workspace::whereIn('id', $ids)
             ->delete();
     }
+    public function duplicate(int $workspaceId): Workspace
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
 
+        $newName = $this->makeUniqueCopyName(
+            $workspace->name,
+            $workspace->user_id
+        );
+
+        return Workspace::create([
+            'user_id' => $workspace->user_id,
+            'name' => $newName,
+            'slug' => \Illuminate\Support\Str::slug($newName),
+            'description' => $workspace->description,
+            'image' => $workspace->image,
+            'visibility' => 'private',
+            'is_favorite' => false,
+        ]);
+    }
+
+    private function makeUniqueCopyName(string $name, int $userId): string
+    {
+        $baseName = trim($name) . ' - Copy';
+        $newName = $baseName;
+        $counter = 2;
+
+        while (
+            Workspace::query()
+            ->where('user_id', $userId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($newName))])
+            ->exists()
+        ) {
+            $newName = $baseName . ' ' . $counter;
+            $counter++;
+        }
+
+        return $newName;
+    }
     public function paginateByUser(
         int $userId,
         string $accessMode = 'owned',
@@ -72,7 +109,7 @@ class WorkspaceRepository
             ])
             ->when(
                 $search,
-                fn ($query) =>
+                fn($query) =>
                 $query->where('name', 'LIKE', "%{$search}%")
             );
 

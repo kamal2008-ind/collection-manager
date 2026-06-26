@@ -51,6 +51,17 @@ class WorkspaceService
     {
         $this->workspaceRepository->bulkDelete($ids);
     }
+    public function duplicate(int $workspaceId): Workspace
+    {
+        $duplicatedWorkspace = $this->workspaceRepository->duplicate($workspaceId);
+
+        app(\App\Services\AttachmentService::class)->copyWorkspaceAttachments(
+            $workspaceId,
+            $duplicatedWorkspace->id
+        );
+
+        return $duplicatedWorkspace;
+    }
     public function getPaginatedWorkspaces(
         int $userId,
         string $accessMode = 'owned',

@@ -49,7 +49,17 @@ class CollectionService
     {
         $this->collectionRepository->bulkDelete($ids);
     }
+    public function duplicate(int $collectionId)
+    {
+        $duplicatedCollection = $this->collectionRepository->duplicate($collectionId);
 
+        app(\App\Services\AttachmentService::class)->copyCollectionMovieAttachments(
+            $collectionId,
+            $duplicatedCollection->id
+        );
+
+        return $duplicatedCollection;
+    }
     public function getPaginatedCollections(
         int $userId,
         string $accessMode = 'owned',

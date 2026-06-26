@@ -152,7 +152,7 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div class="flex flex-wrap items-center gap-2">
-            <x-status-badge :visibility="$movie->visibility" />
+            <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0"/>
 
             <x-owner-badge :userid="$movie->user_id" :username="$movie->user->username" />
         </div>
