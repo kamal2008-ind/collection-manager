@@ -64,8 +64,8 @@
                         <div class="flex items-center justify-center gap-3">
                             <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0" :view="$view" />
 
-                            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner"
-                                :assetUrl="$movieUrl" />
+                            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :likeCount="$movie->likes_count ?? 0"
+                                :likedByUser="$movie->isLikedBy(auth()->user())" :assetUrl="$movieUrl" />
                         </div>
                     </td>
 

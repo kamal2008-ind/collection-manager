@@ -103,6 +103,7 @@ class MovieRepository
                 'shares',
                 'attachedWorkspaces as workspaces_count',
                 'attachedCollections as collections_count',
+                'likes'
             ])
             ->when($search, function ($query) use ($search) {
                 $search = trim($search);

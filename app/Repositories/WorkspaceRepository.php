@@ -106,6 +106,7 @@ class WorkspaceRepository
                 'shares',
                 'collections as collections_count',
                 'attachedMovies as movies_count',
+                'likes'
             ])
             ->when(
                 $search,

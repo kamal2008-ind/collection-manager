@@ -12,11 +12,14 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use App\Services\MovieShareService;
+use App\Services\LikeService;
+use App\Livewire\Concerns\HasUserViewPreferences;
 
 class Index extends Component
 {
     use WithPagination;
     use WithFileUploads;
+    use HasUserViewPreferences;
 
     public string $search = '';
     public string $filter = 'recent';
@@ -72,17 +75,25 @@ class Index extends Component
     protected MovieService $movieService;
     protected AttachmentService $attachmentService;
     protected MovieShareService $movieShareService;
+    protected LikeService $likeService;
 
     public function boot(
         MovieService $movieService,
         AttachmentService $attachmentService,
-        MovieShareService $movieShareService
+        MovieShareService $movieShareService,
+        LikeService $likeService
     ): void {
         $this->movieService = $movieService;
         $this->attachmentService = $attachmentService;
         $this->movieShareService = $movieShareService;
+        $this->likeService = $likeService;
     }
-
+    public function mount(): void
+    {
+        $this->shareSearchResults = [];
+        $this->sharedUsers = [];
+        $this->loadUserViewPreferences();
+    }
     protected function rules(): array
     {
         return [
@@ -347,28 +358,28 @@ class Index extends Component
         $this->showDeleteModal = true;
     }
 
-    public function setView(string $view): void
-    {
-        if (! in_array($view, ['table', 'card', 'masonry'], true)) {
-            return;
-        }
+    // public function setView(string $view): void
+    // {
+    //     if (! in_array($view, ['table', 'card', 'masonry'], true)) {
+    //         return;
+    //     }
 
-        $this->view = $view;
-        $this->selected = [];
-        $this->resetPage();
-    }
+    //     $this->view = $view;
+    //     $this->selected = [];
+    //     $this->resetPage();
+    // }
 
-    public function setPaginationMode(string $mode): void
-    {
-        if (! in_array($mode, ['pages', 'lazy'], true)) {
-            return;
-        }
+    // public function setPaginationMode(string $mode): void
+    // {
+    //     if (! in_array($mode, ['pages', 'lazy'], true)) {
+    //         return;
+    //     }
 
-        $this->paginationMode = $mode;
-        $this->selected = [];
-        $this->perPage = 12;
-        $this->resetPage();
-    }
+    //     $this->paginationMode = $mode;
+    //     $this->selected = [];
+    //     $this->perPage = 12;
+    //     $this->resetPage();
+    // }
 
     public function loadMore(): void
     {
@@ -826,6 +837,13 @@ class Index extends Component
         // session()->flash('success', 'Workspace share link copied.');
         $this->dispatch('toast', message: 'Movie share link copied.', type: 'success');
     }
+    public function toggleLike(int $movieId): void
+    {
+        $movie = Movie::with('shares')->findOrFail($movieId);
+
+        $this->likeService->toggle($movie);
+    }
+
     public function render()
     {
         return view('livewire.movie.index', [

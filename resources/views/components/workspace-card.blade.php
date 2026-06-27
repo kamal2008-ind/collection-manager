@@ -101,14 +101,14 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div>
-            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0"/>
+            <x-status-badge :visibility="$workspace->visibility" :shared="($workspace->shares_count ?? 0) > 0" />
 
             <x-owner-badge :userid="$workspace->user_id" :username="$workspace->user->username" />
         </div>
 
         <div class="flex gap-2">
-            <x-card-footer-meta :visibility="$workspace->visibility" :assetId="$workspace->id" :isOwner="$isOwner" :shareCount="$workspace->shares_count"
-                :assetUrl="$workspaceUrl" />
+            <x-card-footer-meta :visibility="$workspace->visibility" :assetId="$workspace->id" :isOwner="$isOwner" :likeCount="$workspace->likes_count ?? 0"
+                :likedByUser="$workspace->isLikedBy(auth()->user())" :shareCount="$workspace->shares_count" :assetUrl="$workspaceUrl" />
         </div>
     </div>
 </div>

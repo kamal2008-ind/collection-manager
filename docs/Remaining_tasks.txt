@@ -4,6 +4,6 @@
 4. Mobile view
 1) No more workspaces. No more collections. no more movies. - message should be display at end of the page.
 2) Movie card - workspaces (2) collections (2) - should be display proper.
-5. Community likes
+5. Pagination mode and View mode must according to User's choice and should consistence through all page.
 
 

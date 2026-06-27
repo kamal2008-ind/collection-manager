@@ -3,35 +3,13 @@
     'assetId' => 1,
     'isOwner' => false,
     'likeCount' => 0,
-    'likedByUser' => false,
     'shareCount' => 0,
     'assetUrl' => '#',
     'module' => 'workspace',
 ])
-
-@php
-    $canLike = auth()->check() && ! $isOwner;
-@endphp
-
-@if ($isOwner)
-    <span title="Likes">
-        ❤️ {{ $likeCount }}
-    </span>
-@elseif ($canLike)
-    <button
-        type="button"
-        title="{{ $likedByUser ? 'Unlike' : 'Like' }}"
-        wire:click="toggleLike({{ $assetId }})"
-        class="hover:scale-110 transition"
-    >
-        {{ $likedByUser ? '❤️' : '♡' }} {{ $likeCount }}
-    </button>
-@else
-    <span title="Likes">
-        ♡ {{ $likeCount }}
-    </span>
-@endif
-
+<span title="Likes">
+    ❤️ {{ $likeCount }}
+</span>
 @if ($visibility === 'public')
     <button type="button" title="Copy Link" wire:click="copyShareLink({{ $assetId }})">
         🔗
@@ -45,7 +23,6 @@
         🤝 {{ $shareCount ?? 0 }}
     </span>
 @endif
-
 <a href="{{ $assetUrl }}" target="_blank" title="Open link">
     ↗️
 </a>

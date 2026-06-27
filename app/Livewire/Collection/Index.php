@@ -13,11 +13,14 @@ use App\Models\Attachment;
 use App\Services\AttachmentService;
 use App\Services\CollectionShareService;
 use Illuminate\Validation\Rule;
+use App\Services\LikeService;
+use App\Livewire\Concerns\HasUserViewPreferences;
 
 class Index extends Component
 {
     use WithPagination;
     use WithFileUploads;
+    use HasUserViewPreferences;
 
     public string $search = '';
     public string $filter = 'recent';
@@ -77,14 +80,23 @@ class Index extends Component
     protected CollectionService $collectionService;
     protected AttachmentService $attachmentService;
     protected CollectionShareService $collectionShareService;
+    protected LikeService $likeService;
     public function boot(
         CollectionService $collectionService,
         AttachmentService $attachmentService,
-        CollectionShareService $collectionShareService
+        CollectionShareService $collectionShareService,
+        LikeService $likeService
     ): void {
         $this->collectionService = $collectionService;
         $this->attachmentService = $attachmentService;
         $this->collectionShareService = $collectionShareService;
+        $this->likeService = $likeService;
+    }
+    public function mount(): void
+    {
+        $this->shareSearchResults = [];
+        $this->sharedUsers = [];
+        $this->loadUserViewPreferences();
     }
     protected function rules(): array
     {
@@ -256,28 +268,28 @@ class Index extends Component
         $this->showDeleteModal = true;
     }
 
-    public function setView(string $view): void
-    {
-        if (! in_array($view, ['table', 'card', 'masonry'])) {
-            return;
-        }
+    // public function setView(string $view): void
+    // {
+    //     if (! in_array($view, ['table', 'card', 'masonry'])) {
+    //         return;
+    //     }
 
-        $this->view = $view;
-        $this->selected = [];
-        $this->resetPage();
-    }
+    //     $this->view = $view;
+    //     $this->selected = [];
+    //     $this->resetPage();
+    // }
 
-    public function setPaginationMode(string $mode): void
-    {
-        if (! in_array($mode, ['pages', 'lazy'])) {
-            return;
-        }
+    // public function setPaginationMode(string $mode): void
+    // {
+    //     if (! in_array($mode, ['pages', 'lazy'])) {
+    //         return;
+    //     }
 
-        $this->paginationMode = $mode;
-        $this->selected = [];
-        $this->perPage = 12;
-        $this->resetPage();
-    }
+    //     $this->paginationMode = $mode;
+    //     $this->selected = [];
+    //     $this->perPage = 12;
+    //     $this->resetPage();
+    // }
 
     public function loadMore(): void
     {
@@ -852,6 +864,13 @@ class Index extends Component
         // session()->flash('success', 'Workspace share link copied.');
         $this->dispatch('toast', message: 'Collection share link copied.', type: 'success');
     }
+    public function toggleLike(int $collectionId): void
+    {
+        $collection = Collection::with('shares')->findOrFail($collectionId);
+
+        $this->likeService->toggle($collection);
+    }
+
     public function render()
     {
         return view('livewire.collection.index', [

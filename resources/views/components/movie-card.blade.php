@@ -135,14 +135,14 @@
                 <span class="whitespace-nowrap" title="Attached workspaces">
                     🏢
                     {{-- <span class="rounded bg-purple-100 px-1 py-1 text-xs text-purple-700"> --}}
-                        Workspaces ({{ $movie->workspaces_count ?? 0 }})
+                    Workspaces ({{ $movie->workspaces_count ?? 0 }})
                     {{-- </span> --}}
                 </span>
 
                 <span class="whitespace-nowrap" title="Attached collections">
                     📁
                     {{-- <span class="rounded bg-yellow-100 px-1 py-1 text-xs text-yellow-700"> --}}
-                        Collections ({{ $movie->collections_count ?? 0 }})
+                    Collections ({{ $movie->collections_count ?? 0 }})
                     {{-- </span> --}}
                 </span>
             </div>
@@ -152,14 +152,14 @@
     {{-- Footer --}}
     <div class="mt-4 flex items-center justify-between text-sm">
         <div class="flex flex-wrap items-center gap-2">
-            <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0"/>
+            <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0" />
 
             <x-owner-badge :userid="$movie->user_id" :username="$movie->user->username" />
         </div>
 
         <div class="flex gap-2">
-            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :shareCount="$movie->shares_count"
-            :assetUrl="$movieUrl" />
+            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :likeCount="$movie->likes_count ?? 0"
+                :likedByUser="$movie->isLikedBy(auth()->user())" :assetUrl="$movieUrl" />
         </div>
     </div>
 </div>

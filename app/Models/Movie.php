@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Movie extends Model
 {
@@ -101,5 +102,28 @@ class Movie extends Model
         return $this->shares()
             ->where('shared_with_user_id', $user->id)
             ->exists();
+    }
+    public function likes(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(
+            \App\Models\Like::class,
+            'likeable'
+        );
+    }
+
+    public function likedBy(?\App\Models\User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->likes()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    public function isLikedBy(?\App\Models\User $user): bool
+    {
+        return $this->likedBy($user);
     }
 }

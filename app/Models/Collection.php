@@ -105,4 +105,27 @@ class Collection extends Model
         )->wherePivot('container_type', 'collection')
             ->wherePivot('attachable_type', 'movie');
     }
+    public function likes(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(
+            \App\Models\Like::class,
+            'likeable'
+        );
+    }
+
+    public function likedBy(?\App\Models\User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->likes()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    public function isLikedBy(?\App\Models\User $user): bool
+    {
+        return $this->likedBy($user);
+    }
 }

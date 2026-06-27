@@ -49,8 +49,8 @@
                         <div class="flex items-center justify-center gap-3">
                             <x-status-badge :visibility="$collection->visibility" :shared="($collection->shares_count ?? 0) > 0" :view="$view" />
 
-                            <x-card-footer-meta :visibility="$collection->visibility" :assetId="$collection->id" :isOwner="$isOwner" :shareCount="$collection->shares_count"
-                                :assetUrl="$collectionUrl" />
+                            <x-card-footer-meta :visibility="$collection->visibility" :assetId="$collection->id" :isOwner="$isOwner" :likeCount="$collection->likes_count ?? 0"
+                                :likedByUser="$collection->isLikedBy(auth()->user())" :shareCount="$collection->shares_count" :assetUrl="$collectionUrl" />
                         </div>
                     </td>
 

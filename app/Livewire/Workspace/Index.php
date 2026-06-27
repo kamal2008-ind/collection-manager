@@ -14,11 +14,14 @@ use App\Services\AttachmentService;
 use Illuminate\Validation\Rule;
 use App\Models\Movie;
 use App\Models\Attachment;
+use App\Services\LikeService;
+use App\Livewire\Concerns\HasUserViewPreferences;
 
 class Index extends Component
 {
     use WithPagination;
     use WithFileUploads;
+    use HasUserViewPreferences;
 
     public string $search = '';
     public string $filter = 'recent';
@@ -73,6 +76,7 @@ class Index extends Component
     protected WorkspaceService $workspaceService;
     protected WorkspaceShareService $workspaceShareService;
     protected AttachmentService $attachmentService;
+    protected LikeService $likeService;
 
     protected function rules(): array
     {
@@ -106,16 +110,19 @@ class Index extends Component
     public function boot(
         WorkspaceService $workspaceService,
         WorkspaceShareService $workspaceShareService,
-        AttachmentService $attachmentService
+        AttachmentService $attachmentService,
+        LikeService $likeService
     ): void {
         $this->workspaceService = $workspaceService;
         $this->workspaceShareService = $workspaceShareService;
         $this->attachmentService = $attachmentService;
+        $this->likeService = $likeService;
     }
     public function mount(): void
     {
         $this->shareSearchResults = [];
         $this->sharedUsers = [];
+        $this->loadUserViewPreferences();
     }
     public function updatedSearch(): void
     {
@@ -294,16 +301,16 @@ class Index extends Component
         $this->deleteWorkspaceName = count($this->selected) . ' selected workspaces';
         $this->showDeleteModal = true;
     }
-    public function setView(string $view): void
-    {
-        if (! in_array($view, ['table', 'card', 'masonry'])) {
-            return;
-        }
+    // public function setView(string $view): void
+    // {
+    //     if (! in_array($view, ['table', 'card', 'masonry'])) {
+    //         return;
+    //     }
 
-        $this->view = $view;
-        $this->selected = [];
-        $this->resetPage();
-    }
+    //     $this->view = $view;
+    //     $this->selected = [];
+    //     $this->resetPage();
+    // }
     public function copyShareLink(int $workspaceId): void
     {
         $workspace = $this->workspaceService->findById($workspaceId);
@@ -460,24 +467,24 @@ class Index extends Component
         // session()->flash('success', 'Workspace settings coming soon.');
         $this->dispatch('toast', message: 'Workspace settings coming soon.', type: 'info');
     }
-    public function setPaginationMode(string $mode): void
-    {
-        if (! in_array($mode, ['pages', 'lazy'])) {
-            return;
-        }
+    // public function setPaginationMode(string $mode): void
+    // {
+    //     if (! in_array($mode, ['pages', 'lazy'])) {
+    //         return;
+    //     }
 
-        $this->paginationMode = $mode;
-        $this->selected = [];
-        $this->resetPage();
+    //     $this->paginationMode = $mode;
+    //     $this->selected = [];
+    //     $this->resetPage();
 
-        if ($mode === 'pages') {
-            $this->perPage = 12;
-        }
+    //     if ($mode === 'pages') {
+    //         $this->perPage = 12;
+    //     }
 
-        if ($mode === 'lazy') {
-            $this->perPage = 12;
-        }
-    }
+    //     if ($mode === 'lazy') {
+    //         $this->perPage = 12;
+    //     }
+    // }
 
     public function loadMore(): void
     {
@@ -785,6 +792,13 @@ class Index extends Component
 
         $this->dispatch('toast', message: 'Movie detached from workspace.', type: 'success');
     }
+    public function toggleLike(int $workspaceId): void
+    {
+        $workspace = Workspace::with('shares')->findOrFail($workspaceId);
+
+        $this->likeService->toggle($workspace);
+    }
+
     public function render()
     {
         return view('livewire.workspace.index', [

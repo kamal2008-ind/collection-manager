@@ -103,6 +103,7 @@ class CollectionRepository
                 'shares',
                 'attachedWorkspaces as workspaces_count',
                 'attachedMovies as movies_count',
+                'likes'
             ])
             ->when(
                 $search,
