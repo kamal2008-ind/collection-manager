@@ -104,7 +104,7 @@
             🎬 Movies ({{ $collection->movies_count ?? 0 }})
         </div>
         <div>
-            📘 Books (0)
+            📘 Books ({{ $collection->books_count ?? 0 }})
         </div>
     </div>
 

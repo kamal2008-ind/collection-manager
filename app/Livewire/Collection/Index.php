@@ -15,6 +15,7 @@ use App\Services\CollectionShareService;
 use Illuminate\Validation\Rule;
 use App\Services\LikeService;
 use App\Livewire\Concerns\HasUserViewPreferences;
+use App\Models\Book;
 
 class Index extends Component
 {
@@ -76,6 +77,13 @@ class Index extends Component
     public ?string $addItemsCollectionName = null;
     public ?int $removeItemsCollectionId = null;
     public ?string $removeItemsCollectionName = null;
+    public string $bookSearch = '';
+    public string $removeBookSearch = '';
+    public array $bookOptions = [];
+    public array $removeBookOptions = [];
+    public array $addedBookIds = [];
+    public array $selectedBookIds = [];
+    public array $selectedRemoveBookIds = [];
 
     protected CollectionService $collectionService;
     protected AttachmentService $attachmentService;
@@ -670,8 +678,28 @@ class Index extends Component
             ->map(fn($id) => (int) $id)
             ->toArray();
 
+        $this->bookOptions = Book::query()
+            ->where('user_id', auth()->id())
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($book) => [
+                'id' => $book->id,
+                'name' => $book->title,
+            ])
+            ->toArray();
+
+        $this->addedBookIds = Attachment::query()
+            ->where('container_type', 'collection')
+            ->where('container_id', $collection->id)
+            ->where('attachable_type', 'book')
+            ->pluck('attachable_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
         $this->selectedMovieIds = [];
         $this->movieSearch = '';
+        $this->selectedBookIds = [];
+        $this->bookSearch = '';
         $this->addItemsDrawerOpen = true;
     }
 
@@ -686,6 +714,10 @@ class Index extends Component
         $this->selectedMovieIds = [];
         $this->movieSearch = '';
         $this->drawerPerPage = 12;
+        $this->bookOptions = [];
+        $this->addedBookIds = [];
+        $this->selectedBookIds = [];
+        $this->bookSearch = '';
     }
 
     public function addSelectedItems(): void
@@ -694,30 +726,57 @@ class Index extends Component
             return;
         }
 
-        if (empty($this->selectedMovieIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
-            return;
+        if ($this->addItemsType === 'movies') {
+            if (empty($this->selectedMovieIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedMovieIds as $movieId) {
+                    $this->attachmentService->attachMovieToCollections(
+                        (int) $movieId,
+                        [$this->addItemsCollectionId]
+                    );
+                }
+
+                $this->addedMovieIds = Attachment::query()
+                    ->where('container_type', 'collection')
+                    ->where('container_id', $this->addItemsCollectionId)
+                    ->where('attachable_type', 'movie')
+                    ->pluck('attachable_id')
+                    ->map(fn($id) => (int) $id)
+                    ->toArray();
+
+                $this->selectedMovieIds = [];
+                $this->movieSearch = '';
+
+                $this->dispatch('toast', message: 'Movie(s) added to collection successfully.', type: 'success');
+            }
+        } elseif ($this->addItemsType === 'books') {
+            if (empty($this->selectedBookIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 book.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedBookIds as $bookId) {
+                    $this->attachmentService->attachBookToCollections(
+                        (int) $bookId,
+                        [$this->addItemsCollectionId]
+                    );
+                }
+
+                $this->addedBookIds = Attachment::query()
+                    ->where('container_type', 'collection')
+                    ->where('container_id', $this->addItemsCollectionId)
+                    ->where('attachable_type', 'book')
+                    ->pluck('attachable_id')
+                    ->map(fn($id) => (int) $id)
+                    ->toArray();
+
+                $this->addedBookIds = [];
+                $this->bookSearch = '';
+
+                $this->dispatch('toast', message: 'Book(s) added to collection successfully.', type: 'success');
+            }
         }
-
-        foreach ($this->selectedMovieIds as $movieId) {
-            $this->attachmentService->attachMovieToCollections(
-                (int) $movieId,
-                [$this->addItemsCollectionId]
-            );
-        }
-
-        $this->addedMovieIds = Attachment::query()
-            ->where('container_type', 'collection')
-            ->where('container_id', $this->addItemsCollectionId)
-            ->where('attachable_type', 'movie')
-            ->pluck('attachable_id')
-            ->map(fn($id) => (int) $id)
-            ->toArray();
-
-        $this->selectedMovieIds = [];
-        $this->movieSearch = '';
-
-        $this->dispatch('toast', message: 'Movie(s) added to collection successfully.', type: 'success');
     }
 
     public function detachMovieItem(int $movieId): void
@@ -740,6 +799,27 @@ class Index extends Component
             ->toArray();
 
         $this->dispatch('toast', message: 'Movie detached from collection.', type: 'success');
+    }
+    public function detachBookItem(int $bookId): void
+    {
+        if (! $this->addItemsCollectionId) {
+            return;
+        }
+
+        $this->attachmentService->detachBookFromCollection(
+            $bookId,
+            $this->addItemsCollectionId
+        );
+
+        $this->addedBookIds = Attachment::query()
+            ->where('container_type', 'collection')
+            ->where('container_id', $this->addItemsCollectionId)
+            ->where('attachable_type', 'book')
+            ->pluck('attachable_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
+        $this->dispatch('toast', message: 'Book detached from collection.', type: 'success');
     }
 
     public function openRemoveItemsDrawer(int $collectionId): void
@@ -764,8 +844,24 @@ class Index extends Component
             ])
             ->toArray();
 
+        $this->removeBookOptions = Book::query()
+            ->where('user_id', auth()->id())
+            ->whereHas('attachedCollections', function ($query) use ($collection) {
+                $query->where('container_id', $collection->id);
+            })
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($book) => [
+                'id' => $book->id,
+                'name' => $book->title,
+            ])
+            ->toArray();
+
+
         $this->selectedRemoveMovieIds = [];
         $this->removeMovieSearch = '';
+        $this->selectedRemoveBookIds = [];
+        $this->removeBookSearch = '';
         $this->removeItemsDrawerOpen = true;
     }
 
@@ -779,6 +875,9 @@ class Index extends Component
         $this->selectedRemoveMovieIds = [];
         $this->removeMovieSearch = '';
         $this->drawerPerPage = 12;
+        $this->removeBookOptions = [];
+        $this->selectedRemoveBookIds = [];
+        $this->removeBookSearch = '';
     }
 
     public function detachMovieFromRemoveDrawer(int $movieId): void
@@ -803,33 +902,79 @@ class Index extends Component
 
         $this->dispatch('toast', message: 'Movie detached from collection.', type: 'success');
     }
+    public function detachBookFromRemoveDrawer(int $bookId): void
+    {
+        if (! $this->removeItemsCollectionId) {
+            return;
+        }
 
+        $this->attachmentService->detachBookFromCollection(
+            $bookId,
+            $this->removeItemsCollectionId
+        );
+
+        $this->removeBookOptions = collect($this->removeBookOptions)
+            ->reject(fn($book) => (int) $book['id'] === $bookId)
+            ->values()
+            ->toArray();
+
+        $this->selectedRemoveBookIds = array_values(
+            array_diff($this->selectedRemoveBookIds, [$bookId])
+        );
+
+        $this->dispatch('toast', message: 'Book detached from collection.', type: 'success');
+    }
     public function removeSelectedItems(): void
     {
         if (! $this->removeItemsCollectionId) {
             return;
         }
 
-        if (empty($this->selectedRemoveMovieIds)) {
-            $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
-            return;
+        if ($this->removeItemsType === 'movies') {
+            if (empty($this->selectedRemoveMovieIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 movie.', type: 'error');
+                return;
+            } else {
+
+                foreach ($this->selectedRemoveMovieIds as $movieId) {
+                    $this->attachmentService->detachMovieFromCollection(
+                        (int) $movieId,
+                        $this->removeItemsCollectionId
+                    );
+                }
+
+                $this->removeMovieOptions = collect($this->removeMovieOptions)
+                    ->whereNotIn('id', $this->selectedRemoveMovieIds)
+                    ->values()
+                    ->toArray();
+
+                $this->selectedRemoveMovieIds = [];
+
+                $this->dispatch('toast', message: 'Selected movie(s) removed from collection.', type: 'success');
+            }
+        } elseif ($this->removeItemsType === 'books') {
+            if (empty($this->selectedRemoveBookIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 book.', type: 'error');
+                return;
+            } else {
+
+                foreach ($this->selectedRemoveBookIds as $bookId) {
+                    $this->attachmentService->detachBookFromCollection(
+                        (int) $bookId,
+                        $this->removeItemsCollectionId
+                    );
+                }
+
+                $this->removeBookOptions = collect($this->removeBookOptions)
+                    ->whereNotIn('id', $this->selectedRemoveBookIds)
+                    ->values()
+                    ->toArray();
+
+                $this->selectedRemoveBookIds = [];
+
+                $this->dispatch('toast', message: 'Selected book(s) removed from collection.', type: 'success');
+            }
         }
-
-        foreach ($this->selectedRemoveMovieIds as $movieId) {
-            $this->attachmentService->detachMovieFromCollection(
-                (int) $movieId,
-                $this->removeItemsCollectionId
-            );
-        }
-
-        $this->removeMovieOptions = collect($this->removeMovieOptions)
-            ->whereNotIn('id', $this->selectedRemoveMovieIds)
-            ->values()
-            ->toArray();
-
-        $this->selectedRemoveMovieIds = [];
-
-        $this->dispatch('toast', message: 'Selected movie(s) removed from collection.', type: 'success');
     }
 
     public function setAccessMode(string $mode): void
@@ -870,7 +1015,26 @@ class Index extends Component
 
         $this->likeService->toggle($collection);
     }
+    public function updatedAddItemsType(): void
+    {
+        $this->movieSearch = '';
+        $this->bookSearch = '';
 
+        $this->selectedMovieIds = [];
+        $this->selectedBookIds = [];
+
+        $this->drawerPerPage = 12;
+    }
+    public function updatedRemoveItemsType(): void
+    {
+        $this->removeMovieSearch = '';
+        $this->removeBookSearch = '';
+
+        $this->selectedRemoveMovieIds = [];
+        $this->selectedRemoveBookIds = [];
+
+        $this->drawerPerPage = 12;
+    }
     public function render()
     {
         return view('livewire.collection.index', [

@@ -212,25 +212,84 @@ class AttachmentRepository
         }
     }
 
-    public function copyCollectionMovieAttachments(
+    public function copyCollectionAttachments(
         int $fromCollectionId,
         int $toCollectionId
     ): void {
-        $movieIds = Attachment::query()
+        $attachments = Attachment::query()
             ->where('container_type', 'collection')
             ->where('container_id', $fromCollectionId)
-            ->where('attachable_type', 'movie')
-            ->pluck('attachable_id')
-            ->map(fn($id) => (int) $id)
-            ->toArray();
+            ->get(['attachable_type', 'attachable_id']);
 
-        foreach ($movieIds as $movieId) {
+        foreach ($attachments as $attachment) {
             $this->attach(
                 'collection',
                 $toCollectionId,
-                'movie',
-                $movieId
+                $attachment->attachable_type,
+                (int) $attachment->attachable_id
             );
         }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Book helper methods
+    |--------------------------------------------------------------------------
+    */
+
+    public function getAttachedWorkspaceIdsForBook(int $bookId): array
+    {
+        return $this->getAttachedContainerIds(
+            'workspace',
+            'book',
+            $bookId
+        );
+    }
+
+    public function getAttachedCollectionIdsForBook(int $bookId): array
+    {
+        return $this->getAttachedContainerIds(
+            'collection',
+            'book',
+            $bookId
+        );
+    }
+
+    public function attachBookToWorkspace(int $workspaceId, int $bookId): Attachment
+    {
+        return $this->attach(
+            'workspace',
+            $workspaceId,
+            'book',
+            $bookId
+        );
+    }
+
+    public function attachBookToCollection(int $collectionId, int $bookId): Attachment
+    {
+        return $this->attach(
+            'collection',
+            $collectionId,
+            'book',
+            $bookId
+        );
+    }
+    public function detachBookFromWorkspace(int $workspaceId, int $bookId): void
+    {
+        $this->detach(
+            'workspace',
+            $workspaceId,
+            'book',
+            $bookId
+        );
+    }
+    public function detachBookFromCollection(int $collectionId, int $bookId): void
+    {
+        $this->detach(
+            'collection',
+            $collectionId,
+            'book',
+            $bookId
+        );
     }
 }

@@ -8,7 +8,7 @@
                     Remove Items from Collection
                 </h2>
 
-                @if ($removeItemsCollectionName ?? null)
+                @if ($removeItemsCollectionName)
                     <p class="mt-1 text-sm text-red-600">
                         {{ $removeItemsCollectionName }}
                     </p>
@@ -26,87 +26,126 @@
                     Item Type
                 </label>
 
-                <select
-                    wire:model.live="removeItemsType"
-                    class="w-full rounded-lg border-gray-300 focus:border-red-600 focus:ring-red-600"
-                >
+                <select wire:model.live="removeItemsType"
+                    class="w-full rounded-lg border-gray-300 focus:border-red-600 focus:ring-red-600">
                     <option value="movies">Movies</option>
+                    <option value="books">Books</option>
                 </select>
             </div>
 
             @php
-                $attachedMovies = collect($removeMovieOptions ?? [])->filter(function ($movie) use ($removeMovieSearch) {
-                    if (blank($removeMovieSearch)) {
+                $isMovieType = $removeItemsType === 'movies';
+                $isBookType = $removeItemsType === 'books';
+
+                $itemOptions = $isBookType
+                    ? collect($removeBookOptions ?? [])
+                    : ($isMovieType
+                        ? collect($removeMovieOptions ?? [])
+                        : collect([]));
+
+                $searchValue = $isBookType
+                    ? $removeBookSearch ?? ''
+                    : ($isMovieType
+                        ? $removeMovieSearch ?? ''
+                        : '');
+
+                $itemLabel = $isBookType ? 'Books' : ($isMovieType ? 'Movies' : '');
+                $itemLabelSingular = $isBookType ? 'book' : ($isMovieType ? 'movie' : '');
+
+                $attachedItems = $itemOptions->filter(function ($item) use ($searchValue) {
+                    if (blank($searchValue)) {
                         return true;
                     }
 
-                    return str_contains(strtolower($movie['name']), strtolower($removeMovieSearch));
+                    return str_contains(strtolower($item['name']), strtolower($searchValue));
                 });
 
-                $visibleAttachedMovies = $attachedMovies->take($drawerPerPage);
-                $hasMoreAttachedMovies = $attachedMovies->count() > $drawerPerPage;
-                $disableRemoveItems = $attachedMovies->isEmpty();
+                $visibleAttachedItems = $attachedItems->take($drawerPerPage);
+                $hasMoreAttachedItems = $attachedItems->count() > $drawerPerPage;
+
+                $selectedCount = $isBookType
+                    ? count($selectedRemoveBookIds ?? [])
+                    : ($isMovieType
+                        ? count($selectedRemoveMovieIds ?? [])
+                        : count([]));
+
+                $disableRemoveItems = $attachedItems->isEmpty();
             @endphp
 
             <div>
                 <h3 class="mb-3 text-base font-semibold">
-                    Attached Movies
+                    Attached {{ $itemLabel }}
                 </h3>
 
                 <div class="relative mb-3">
-                    <input
-                        type="text"
-                        wire:model.live.debounce.300ms="removeMovieSearch"
-                        placeholder="Search attached movies..."
-                        class="w-full rounded-lg border-gray-300 pr-10 focus:border-red-600 focus:ring-red-600"
-                    />
+                    @if ($isBookType)
+                        <input type="text" wire:model.live.debounce.300ms="removeBookSearch"
+                            placeholder="Search attached books..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-red-600 focus:ring-red-600" />
 
-                    @if ($removeMovieSearch)
-                        <button
-                            type="button"
-                            wire:click="$set('removeMovieSearch', '')"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                            title="Clear search"
-                        >
-                            ✕
-                        </button>
+                        @if ($removeBookSearch)
+                            <button type="button" wire:click="$set('removeBookSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search">
+                                ✕
+                            </button>
+                        @endif
+                    @elseif ($isMovieType)
+                        <input type="text" wire:model.live.debounce.300ms="removeMovieSearch"
+                            placeholder="Search attached movies..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-red-600 focus:ring-red-600" />
+
+                        @if ($removeMovieSearch)
+                            <button type="button" wire:click="$set('removeMovieSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search">
+                                ✕
+                            </button>
+                        @endif
                     @endif
                 </div>
 
-                @if ($visibleAttachedMovies->isNotEmpty())
+                @if ($visibleAttachedItems->isNotEmpty())
                     <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($visibleAttachedMovies as $movie)
-                            <div
-                                wire:key="remove-movie-{{ $movie['id'] }}"
-                                class="flex items-center justify-between border-b px-4 py-3 last:border-b-0 hover:bg-red-50"
-                            >
+                        @foreach ($visibleAttachedItems as $item)
+                            <div wire:key="remove-{{ $removeItemsType }}-{{ $item['id'] }}"
+                                class="flex items-center justify-between border-b px-4 py-3 last:border-b-0 hover:bg-red-50">
                                 <label class="flex cursor-pointer items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        value="{{ $movie['id'] }}"
-                                        wire:model.live.number="selectedRemoveMovieIds"
-                                        class="rounded border-gray-400"
-                                    >
+                                    @if ($isBookType)
+                                        <input type="checkbox" value="{{ $item['id'] }}"
+                                            wire:model.live.number="selectedRemoveBookIds"
+                                            class="rounded border-gray-400">
+                                    @elseif ($isMovieType)
+                                        <input type="checkbox" value="{{ $item['id'] }}"
+                                            wire:model.live.number="selectedRemoveMovieIds"
+                                            class="rounded border-gray-400">
+                                    @endif
 
                                     <span class="font-medium">
-                                        {{ $movie['name'] }}
+                                        {{ $item['name'] }}
                                     </span>
                                 </label>
-
-                                <button
-                                    type="button"
-                                    wire:click="detachMovieFromRemoveDrawer({{ $movie['id'] }})"
-                                    wire:confirm="Detach this movie from {{ $removeItemsCollectionName }}? This will only remove the attachment. The movie will not be deleted."
-                                    class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-100"
-                                    title="Detach"
-                                >
-                                    ⛓️‍💥
-                                </button>
+                                @if ($isBookType)
+                                    <button type="button" wire:click="detachBookFromRemoveDrawer({{ $item['id'] }})"
+                                        wire:confirm="Detach this book from {{ $removeItemsCollectionName }}? This will only remove the attachment. The book will not be deleted."
+                                        class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-100"
+                                        title="Detach">
+                                        ⛓️‍💥
+                                    </button>
+                                @elseif ($isMovieType)
+                                    <button type="button"
+                                        wire:click="detachMovieFromRemoveDrawer({{ $item['id'] }})"
+                                        wire:confirm="Detach this movie from {{ $removeItemsCollectionName }}? This will only remove the attachment. The movie will not be deleted."
+                                        class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-100"
+                                        title="Detach">
+                                        ⛓️‍💥
+                                    </button>
+                                @endif
                             </div>
                         @endforeach
                     </div>
 
-                    @if ($hasMoreAttachedMovies)
+                    @if ($hasMoreAttachedItems)
                         <div x-data x-intersect="$wire.loadMoreDrawer()" class="py-4 text-center">
                             <div wire:loading wire:target="loadMoreDrawer" class="text-sm text-gray-500">
                                 Loading more...
@@ -118,14 +157,14 @@
                         </div>
                     @endif
 
-                    @if (! $hasMoreAttachedMovies && $visibleAttachedMovies->isNotEmpty())
+                    @if (!$hasMoreAttachedItems && $visibleAttachedItems->isNotEmpty())
                         <div class="py-4 text-center text-sm text-gray-400">
-                            ✓ No more movies
+                            ✓ No more {{ strtolower($itemLabel) }}
                         </div>
                     @endif
                 @else
                     <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
-                        No attached movies found.
+                        No attached {{ $itemLabelSingular }} found.
                     </p>
                 @endif
             </div>
@@ -136,15 +175,11 @@
                 Cancel
             </x-ui.button>
 
-            <x-ui.button
-                variant="danger"
-                wire:click="removeSelectedItems"
-                :disabled="$disableRemoveItems"
-                wire:confirm="Remove selected movie(s) from this collection? This will only remove attachments. Records will not be deleted."
-            >
+            <x-ui.button variant="danger" wire:click="removeSelectedItems" :disabled="$disableRemoveItems"
+                wire:confirm="Remove selected item(s) from this collection? This will only remove attachments. Records will not be deleted.">
                 Remove Items
-                @if (count($selectedRemoveMovieIds))
-                    ({{ count($selectedRemoveMovieIds) }})
+                @if ($selectedCount)
+                    ({{ $selectedCount }})
                 @endif
             </x-ui.button>
         </div>

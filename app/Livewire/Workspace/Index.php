@@ -16,6 +16,7 @@ use App\Models\Movie;
 use App\Models\Attachment;
 use App\Services\LikeService;
 use App\Livewire\Concerns\HasUserViewPreferences;
+use App\Models\Book;
 
 class Index extends Component
 {
@@ -72,6 +73,13 @@ class Index extends Component
     public array $removeMovieOptions = [];
     public array $selectedRemoveMovieIds = [];
     public string $removeMovieSearch = '';
+    public array $bookOptions = [];
+    public array $addedBookIds = [];
+    public array $selectedBookIds = [];
+    public string $bookSearch = '';
+    public array $removeBookOptions = [];
+    public array $selectedRemoveBookIds = [];
+    public string $removeBookSearch = '';
 
     protected WorkspaceService $workspaceService;
     protected WorkspaceShareService $workspaceShareService;
@@ -192,12 +200,6 @@ class Index extends Component
 
         $this->closeDrawer();
 
-        // session()->flash(
-        //     'success',
-        //     $this->drawerMode === 'create'
-        //         ? 'Workspace created successfully.'
-        //         : 'Workspace updated successfully.'
-        // );
         if ($this->drawerMode === 'create') {
             $this->dispatch('toast', message: 'Workspace created successfully.', type: 'success');
         } else {
@@ -264,7 +266,6 @@ class Index extends Component
         $this->deleteWorkspaceId = null;
         $this->deleteWorkspaceName = null;
 
-        // session()->flash('success',$deleteWorkspaceMessage);
         $this->dispatch('toast', message: $deleteWorkspaceMessage, type: 'success');
     }
     public function toggleFavorite(int $workspaceId): void
@@ -287,7 +288,6 @@ class Index extends Component
 
         $this->workspaceService->bulkFavorite($this->selected);
         $this->selected = [];
-        // session()->flash('success', 'Selected workspaces marked as favorite.');
         $this->dispatch('toast', message: 'Selected workspaces marked as favorite.', type: 'success');
     }
 
@@ -301,22 +301,12 @@ class Index extends Component
         $this->deleteWorkspaceName = count($this->selected) . ' selected workspaces';
         $this->showDeleteModal = true;
     }
-    // public function setView(string $view): void
-    // {
-    //     if (! in_array($view, ['table', 'card', 'masonry'])) {
-    //         return;
-    //     }
 
-    //     $this->view = $view;
-    //     $this->selected = [];
-    //     $this->resetPage();
-    // }
     public function copyShareLink(int $workspaceId): void
     {
         $workspace = $this->workspaceService->findById($workspaceId);
 
         if ($workspace->visibility !== 'public') {
-            // session()->flash('success', 'Make workspace public before sharing.');
             $this->dispatch('toast', message: 'Make workspace public before sharing.', type: 'success');
             return;
         }
@@ -325,7 +315,6 @@ class Index extends Component
 
         $this->dispatch('copy-to-clipboard', text: $url);
 
-        // session()->flash('success', 'Workspace share link copied.');
         $this->dispatch('toast', message: 'Workspace share link copied.', type: 'success');
     }
 
@@ -374,7 +363,6 @@ class Index extends Component
 
         $this->loadSharedUsers();
 
-        // session()->flash('success', 'Workspace shared successfully.');
         $this->dispatch('toast', message: 'Workspace shared successfully.', type: 'success');
     }
 
@@ -391,7 +379,6 @@ class Index extends Component
 
         $this->loadSharedUsers();
 
-        // session()->flash('success', 'Workspace share removed.');
         $this->dispatch('toast', message: 'Workspace share removed.', type: 'success');
     }
 
@@ -453,38 +440,17 @@ class Index extends Component
 
         $this->dispatch('copy-to-clipboard', text: $url);
 
-        // session()->flash('success', 'Workspace link copied.');
         $this->dispatch('toast', message: 'Workspace link copied.', type: 'success');
     }
 
     public function workspaceStatistics(int $workspaceId): void
     {
-        // session()->flash('success', 'Workspace statistics coming soon.');
         $this->dispatch('toast', message: 'Workspace statistics coming soon.', type: 'info');
     }
     public function workspaceSettings(int $workspaceId): void
     {
-        // session()->flash('success', 'Workspace settings coming soon.');
         $this->dispatch('toast', message: 'Workspace settings coming soon.', type: 'info');
     }
-    // public function setPaginationMode(string $mode): void
-    // {
-    //     if (! in_array($mode, ['pages', 'lazy'])) {
-    //         return;
-    //     }
-
-    //     $this->paginationMode = $mode;
-    //     $this->selected = [];
-    //     $this->resetPage();
-
-    //     if ($mode === 'pages') {
-    //         $this->perPage = 12;
-    //     }
-
-    //     if ($mode === 'lazy') {
-    //         $this->perPage = 12;
-    //     }
-    // }
 
     public function loadMore(): void
     {
@@ -529,8 +495,26 @@ class Index extends Component
             ->pluck('attachable_id')
             ->toArray();
 
+        $this->bookOptions = Book::query()
+            ->where('user_id', auth()->id())
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($book) => [
+                'id' => $book->id,
+                'name' => $book->title,
+            ])
+            ->toArray();
+
+        $this->addedBookIds = Attachment::query()
+            ->where('container_type', 'workspace')
+            ->where('container_id', $workspace->id)
+            ->where('attachable_type', 'book')
+            ->pluck('attachable_id')
+            ->toArray();
+
         $this->selectedCollectionIds = [];
         $this->selectedMovieIds = [];
+        $this->selectedBookIds = [];
         $this->addItemsDrawerOpen = true;
     }
     public function closeAddItemsDrawer(): void
@@ -548,6 +532,10 @@ class Index extends Component
         $this->addedMovieIds = [];
         $this->selectedMovieIds = [];
         $this->movieSearch = '';
+        $this->bookOptions = [];
+        $this->addedBookIds = [];
+        $this->selectedBookIds = [];
+        $this->bookSearch = '';
     }
 
     public function addSelectedItems(): void
@@ -602,6 +590,29 @@ class Index extends Component
                 $this->movieSearch = '';
                 $this->dispatch('toast', message: 'Selected movie(s) added successfully.', type: 'success');
             }
+        } elseif ($this->addItemsType === 'books') {
+            if (empty($this->selectedBookIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 book.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedBookIds as $bookId) {
+                    $this->attachmentService->attachBookToWorkspaces(
+                        (int) $bookId,
+                        [$this->addItemsWorkspaceId]
+                    );
+                }
+
+                $this->addedBookIds = Attachment::query()
+                    ->where('container_type', 'workspace')
+                    ->where('container_id', $this->addItemsWorkspaceId)
+                    ->where('attachable_type', 'book')
+                    ->pluck('attachable_id')
+                    ->toArray();
+
+                $this->selectedBookIds = [];
+                $this->bookSearch = '';
+                $this->dispatch('toast', message: 'Selected book(s) added successfully.', type: 'success');
+            }
         }
     }
 
@@ -616,7 +627,7 @@ class Index extends Component
             $this->addItemsWorkspaceId
         );
 
-        $this->addedCollectionIds = \App\Models\Attachment::query()
+        $this->addedCollectionIds = Attachment::query()
             ->where('container_type', 'workspace')
             ->where('container_id', $this->addItemsWorkspaceId)
             ->where('attachable_type', 'collection')
@@ -634,7 +645,7 @@ class Index extends Component
         $this->removeItemsType = 'collections';
         $this->drawerPerPage = 12;
 
-        $this->removeCollectionOptions = \App\Models\Collection::query()
+        $this->removeCollectionOptions = Collection::query()
             ->where('user_id', auth()->id())
             ->whereHas('attachedWorkspaces', function ($query) use ($workspace) {
                 $query->where('container_id', $workspace->id);
@@ -656,10 +667,25 @@ class Index extends Component
             ])
             ->toArray();
 
+        $this->removeBookOptions = Book::query()
+            ->where('user_id', auth()->id())
+            ->whereHas('attachedWorkspaces', function ($query) use ($workspace) {
+                $query->where('container_id', $workspace->id);
+            })
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(fn($book) => [
+                'id' => $book->id,
+                'name' => $book->title,
+            ])
+            ->toArray();
+
         $this->selectedRemoveCollectionIds = [];
         $this->removeCollectionSearch = '';
         $this->selectedRemoveMovieIds = [];
         $this->removeMovieSearch = '';
+        $this->selectedRemoveBookIds = [];
+        $this->removeBookSearch = '';
         $this->removeItemsDrawerOpen = true;
     }
 
@@ -676,6 +702,9 @@ class Index extends Component
         $this->removeMovieOptions = [];
         $this->selectedRemoveMovieIds = [];
         $this->removeMovieSearch = '';
+        $this->removeBookOptions = [];
+        $this->selectedRemoveBookIds = [];
+        $this->removeBookSearch = '';
     }
 
     public function detachCollectionFromRemoveDrawer(int $collectionId): void
@@ -706,6 +735,7 @@ class Index extends Component
         if (! $this->removeItemsWorkspaceId) {
             return;
         }
+
         if ($this->removeItemsType === 'collections') {
             if (empty($this->selectedRemoveCollectionIds)) {
                 $this->dispatch('toast', message: 'Please select at least 1 collection.', type: 'error');
@@ -748,6 +778,27 @@ class Index extends Component
                 $this->selectedRemoveMovieIds = [];
 
                 $this->dispatch('toast', message: 'Selected movie(s) detached from workspace.', type: 'success');
+            }
+        } elseif ($this->removeItemsType === 'books') {
+            if (empty($this->selectedRemoveBookIds)) {
+                $this->dispatch('toast', message: 'Please select at least 1 book.', type: 'error');
+                return;
+            } else {
+                foreach ($this->selectedRemoveBookIds as $bookId) {
+                    $this->attachmentService->detachBookFromWorkspace(
+                        (int) $bookId,
+                        $this->removeItemsWorkspaceId
+                    );
+                }
+
+                $this->removeBookOptions = collect($this->removeBookOptions)
+                    ->whereNotIn('id', $this->selectedRemoveBookIds)
+                    ->values()
+                    ->toArray();
+
+                $this->selectedRemoveBookIds = [];
+
+                $this->dispatch('toast', message: 'Selected book(s) detached from workspace.', type: 'success');
             }
         }
     }
@@ -792,6 +843,28 @@ class Index extends Component
 
         $this->dispatch('toast', message: 'Movie detached from workspace.', type: 'success');
     }
+    public function detachBookFromRemoveDrawer(int $bookId): void
+    {
+        if (! $this->removeItemsWorkspaceId) {
+            return;
+        }
+
+        $this->attachmentService->detachBookFromWorkspace(
+            $bookId,
+            $this->removeItemsWorkspaceId
+        );
+
+        $this->removeBookOptions = collect($this->removeBookOptions)
+            ->reject(fn($book) => (int) $book['id'] === $bookId)
+            ->values()
+            ->toArray();
+
+        $this->selectedRemoveBookIds = array_values(
+            array_diff($this->selectedRemoveBookIds, [$bookId])
+        );
+
+        $this->dispatch('toast', message: 'Book detached from workspace.', type: 'success');
+    }
     public function toggleLike(int $workspaceId): void
     {
         $workspace = Workspace::with('shares')->findOrFail($workspaceId);
@@ -799,6 +872,30 @@ class Index extends Component
         $this->likeService->toggle($workspace);
     }
 
+    public function updatedAddItemsType(): void
+    {
+        $this->collectionSearch = '';
+        $this->movieSearch = '';
+        $this->bookSearch = '';
+
+        $this->selectedCollectionIds = [];
+        $this->selectedMovieIds = [];
+        $this->selectedBookIds = [];
+
+        $this->drawerPerPage = 12;
+    }
+    public function updatedRemoveItemsType(): void
+    {
+        $this->removeCollectionSearch = '';
+        $this->removeMovieSearch = '';
+        $this->removeBookSearch = '';
+
+        $this->selectedRemoveCollectionIds = [];
+        $this->selectedRemoveMovieIds = [];
+        $this->selectedRemoveBookIds = [];
+
+        $this->drawerPerPage = 12;
+    }
     public function render()
     {
         return view('livewire.workspace.index', [

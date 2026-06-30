@@ -53,7 +53,7 @@ class CollectionService
     {
         $duplicatedCollection = $this->collectionRepository->duplicate($collectionId);
 
-        app(\App\Services\AttachmentService::class)->copyCollectionMovieAttachments(
+        app(\App\Services\AttachmentService::class)->copyCollectionAttachments(
             $collectionId,
             $duplicatedCollection->id
         );

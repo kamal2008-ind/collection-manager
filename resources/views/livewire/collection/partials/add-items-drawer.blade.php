@@ -8,7 +8,7 @@
                     Add Items to Collection
                 </h2>
 
-                @if ($addItemsCollectionName ?? null)
+                @if ($addItemsCollectionName)
                     <p class="mt-1 text-sm text-green-600">
                         {{ $addItemsCollectionName }}
                     </p>
@@ -26,110 +26,114 @@
                     Item Type
                 </label>
 
-                <select
-                    wire:model.live="addItemsType"
-                    class="w-full rounded-lg border-gray-300 focus:border-green-600 focus:ring-green-600"
-                >
+                <select wire:model.live="addItemsType"
+                    class="w-full rounded-lg border-gray-300 focus:border-green-600 focus:ring-green-600">
                     <option value="movies">Movies</option>
+                    <option value="books">Books</option>
                 </select>
             </div>
 
             @php
-                // $addedMovies = collect($movieOptions ?? [])->whereIn('id', $addedMovieIds ?? []);
+                $isMovieType = $addItemsType === 'movies';
+                $isBookType = $addItemsType === 'books';
 
-                $availableMovies = collect($movieOptions ?? [])
-                    ->whereNotIn('id', $addedMovieIds ?? [])
-                    ->filter(function ($movie) use ($movieSearch) {
-                        if (blank($movieSearch)) {
+                $itemOptions = $isBookType
+                    ? collect($bookOptions ?? [])
+                    : ($isMovieType
+                        ? collect($movieOptions ?? [])
+                        : collect([]));
+
+                $addedItemIds = $isBookType
+                    ? $addedBookIds ?? []
+                    : ($isMovieType
+                        ? $addedMovieIds ?? []
+                        : []);
+
+                $searchValue = $isBookType
+                    ? $bookSearch ?? ''
+                    : ($isMovieType
+                        ? $movieSearch ?? ''
+                        : '');
+
+                $itemLabel = $isBookType ? 'Books' : ($isMovieType ? 'Movies' : '');
+                $itemLabelSingular = $isBookType ? 'book' : ($isMovieType ? 'movie' : '');
+
+                $availableItems = $itemOptions
+                    ->whereNotIn('id', $addedItemIds)
+                    ->filter(function ($item) use ($searchValue) {
+                        if (blank($searchValue)) {
                             return true;
                         }
 
-                        return str_contains(strtolower($movie['name']), strtolower($movieSearch));
+                        return str_contains(strtolower($item['name']), strtolower($searchValue));
                     });
 
-                $visibleMovies = $availableMovies->take($drawerPerPage);
-                $hasMoreMovies = $availableMovies->count() > $drawerPerPage;
-                $disableAddItems = $availableMovies->isEmpty();
+                $visibleItems = $availableItems->take($drawerPerPage);
+                $hasMoreItems = $availableItems->count() > $drawerPerPage;
+
+                $selectedCount = $isBookType
+                    ? count($selectedBookIds ?? [])
+                    : ($isMovieType
+                        ? count($selectedMovieIds ?? [])
+                        : count([]));
+
+                $disableAddItems = $availableItems->isEmpty();
             @endphp
-
-            {{-- @if ($addedMovies->isNotEmpty())
-                <div>
-                    <h3 class="mb-3 text-base font-semibold">
-                        Already Added Movies
-                    </h3>
-
-                    <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($addedMovies as $movie)
-                            <div
-                                wire:key="already-added-movie-{{ $movie['id'] }}"
-                                class="flex items-center justify-between border-b px-4 py-3 last:border-b-0 bg-green-50"
-                            >
-                                <span class="font-medium">
-                                    {{ $movie['name'] }}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    wire:click="detachMovieItem({{ $movie['id'] }})"
-                                    wire:confirm="Detach this movie from {{ $addItemsCollectionName }}? This will only remove the attachment. The movie will not be deleted."
-                                    class="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-100"
-                                    title="Detach"
-                                >
-                                    ⛓️‍💥
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif --}}
 
             <div>
                 <h3 class="mb-3 text-base font-semibold">
-                    Available Movies
+                    Available {{ $itemLabel }}
                 </h3>
 
                 <div class="relative mb-3">
-                    <input
-                        type="text"
-                        wire:model.live.debounce.300ms="movieSearch"
-                        placeholder="Search available movies..."
-                        class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600"
-                    />
+                    @if ($isBookType)
+                        <input type="text" wire:model.live.debounce.300ms="bookSearch"
+                            placeholder="Search available books..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600" />
 
-                    @if ($movieSearch)
-                        <button
-                            type="button"
-                            wire:click="$set('movieSearch', '')"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                            title="Clear search"
-                        >
-                            ✕
-                        </button>
+                        @if ($bookSearch)
+                            <button type="button" wire:click="$set('bookSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search">
+                                ✕
+                            </button>
+                        @endif
+                    @elseif ($isMovieType)
+                        <input type="text" wire:model.live.debounce.300ms="movieSearch"
+                            placeholder="Search available movies..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600" />
+
+                        @if ($movieSearch)
+                            <button type="button" wire:click="$set('movieSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search">
+                                ✕
+                            </button>
+                        @endif
                     @endif
                 </div>
 
-                @if ($availableMovies->isNotEmpty())
+                @if ($availableItems->isNotEmpty())
                     <div class="overflow-hidden rounded-lg border bg-white">
-                        @foreach ($visibleMovies as $movie)
-                            <label
-                                wire:key="available-movie-{{ $movie['id'] }}"
-                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50"
-                            >
-                                <input
-                                    type="checkbox"
-                                    value="{{ $movie['id'] }}"
-                                    wire:model.live="selectedMovieIds"
-                                    class="rounded border-gray-400"
-                                >
+                        @foreach ($visibleItems as $item)
+                            <label wire:key="available-{{ $addItemsType }}-{{ $item['id'] }}"
+                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50">
+                                @if ($isBookType)
+                                    <input type="checkbox" value="{{ $item['id'] }}" wire:model.live="selectedBookIds"
+                                        class="rounded border-gray-400">
+                                @elseif ($isMovieType)
+                                    <input type="checkbox" value="{{ $item['id'] }}"
+                                        wire:model.live="selectedMovieIds" class="rounded border-gray-400">
+                                @endif
 
                                 <span class="font-medium">
-                                    {{ $movie['name'] }}
+                                    {{ $item['name'] }}
                                 </span>
                             </label>
                         @endforeach
                     </div>
 
-                    @if ($hasMoreMovies)
+                    @if ($hasMoreItems)
                         <div x-data x-intersect="$wire.loadMoreDrawer()" class="py-4 text-center">
                             <div wire:loading wire:target="loadMoreDrawer" class="text-sm text-gray-500">
                                 Loading more...
@@ -141,14 +145,14 @@
                         </div>
                     @endif
 
-                    @if (! $hasMoreMovies && $visibleMovies->isNotEmpty())
+                    @if (!$hasMoreItems && $visibleItems->isNotEmpty())
                         <div class="py-4 text-center text-sm text-gray-400">
-                            ✓ No more movies
+                            ✓ No more {{ strtolower($itemLabel) }}
                         </div>
                     @endif
                 @else
                     <p class="rounded-lg border border-dashed p-4 text-sm text-gray-500">
-                        No available movies to add.
+                        No available {{ $itemLabelSingular }} to add.
                     </p>
                 @endif
             </div>
@@ -159,15 +163,11 @@
                 Cancel
             </x-ui.button>
 
-            <x-ui.button
-                variant="success"
-                wire:click="addSelectedItems"
-                :disabled="$disableAddItems"
-                class="bg-green-600 hover:bg-green-700"
-            >
+            <x-ui.button variant="success" wire:click="addSelectedItems" :disabled="$disableAddItems"
+                class="bg-green-600 hover:bg-green-700">
                 Add Items
-                @if (count($selectedMovieIds))
-                    ({{ count($selectedMovieIds) }})
+                @if ($selectedCount)
+                    ({{ $selectedCount }})
                 @endif
             </x-ui.button>
         </div>

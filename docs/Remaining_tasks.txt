@@ -1,9 +1,12 @@
 1. More menu component
 2. Favorite morph table
 3. Movie statistics and settings
-4. Mobile view
-1) No more workspaces. No more collections. no more movies. - message should be display at end of the page.
-2) Movie card - workspaces (2) collections (2) - should be display proper.
-5. Pagination mode and View mode must according to User's choice and should consistence through all page.
+4. Mobile view - No more workspaces. No more collections. no more movies. - message should be display at end of the page.
+5. Partials folder - some files are as it in every module. Does not need it 4 files, need only 1 file to handle all modules.
 
+SELECT id, migration
+FROM migrations
+WHERE migration LIKE '%book%';
 
+DELETE FROM migrations
+WHERE id IN (21, 22);

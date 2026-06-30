@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Models\Collection;
 use App\Models\Movie;
 use App\Models\User;
+use App\Models\Book;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
             'collection' => Collection::class,
             'movie' => Movie::class,
             'user' => User::class,
+            'book' => Book::class,
         ]);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Repositories\AttachmentRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Book;
 
 class AttachmentService
 {
@@ -260,16 +261,134 @@ class AttachmentService
         );
     }
 
-    public function copyCollectionMovieAttachments(
+    public function copyCollectionAttachments(
         int $fromCollectionId,
         int $toCollectionId
     ): void {
         $this->ensureOwnCollection($fromCollectionId);
         $this->ensureOwnCollection($toCollectionId);
 
-        $this->attachmentRepository->copyCollectionMovieAttachments(
+        $this->attachmentRepository->copyCollectionAttachments(
             $fromCollectionId,
             $toCollectionId
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Book → Workspace/Collection methods
+    |--------------------------------------------------------------------------
+    */
+
+    public function getAttachedWorkspaceIdsForBook(int $bookId): array
+    {
+        $this->ensureOwnBook($bookId);
+
+        return $this->attachmentRepository
+            ->getAttachedWorkspaceIdsForBook($bookId);
+    }
+
+    public function getAttachedCollectionIdsForBook(int $bookId): array
+    {
+        $this->ensureOwnBook($bookId);
+
+        return $this->attachmentRepository
+            ->getAttachedCollectionIdsForBook($bookId);
+    }
+
+    public function attachBookToWorkspaces(
+        int $bookId,
+        array $workspaceIds
+    ): void {
+        $this->ensureOwnBook($bookId);
+        $this->ensureOwnWorkspaces($workspaceIds);
+
+        foreach ($workspaceIds as $workspaceId) {
+            $this->attachmentRepository->attachBookToWorkspace(
+                (int) $workspaceId,
+                $bookId
+            );
+        }
+    }
+
+    public function attachBookToCollections(
+        int $bookId,
+        array $collectionIds
+    ): void {
+        $this->ensureOwnBook($bookId);
+        $this->ensureOwnCollections($collectionIds);
+
+        foreach ($collectionIds as $collectionId) {
+            $this->attachmentRepository->attachBookToCollection(
+                (int) $collectionId,
+                $bookId
+            );
+        }
+    }
+
+    public function bulkAttachBooksToWorkspaces(
+        array $bookIds,
+        array $workspaceIds
+    ): void {
+        $this->ensureOwnBooks($bookIds);
+        $this->ensureOwnWorkspaces($workspaceIds);
+
+        $this->attachmentRepository->attachManyToMany(
+            'workspace',
+            $workspaceIds,
+            'book',
+            $bookIds
+        );
+    }
+
+    public function bulkAttachBooksToCollections(
+        array $bookIds,
+        array $collectionIds
+    ): void {
+        $this->ensureOwnBooks($bookIds);
+        $this->ensureOwnCollections($collectionIds);
+
+        $this->attachmentRepository->attachManyToMany(
+            'collection',
+            $collectionIds,
+            'book',
+            $bookIds
+        );
+    }
+
+    public function detachBookFromWorkspace(
+        int $bookId,
+        int $workspaceId
+    ): void {
+        $this->ensureOwnBook($bookId);
+        $this->ensureOwnWorkspace($workspaceId);
+
+        $this->attachmentRepository->detachBookFromWorkspace(
+            $workspaceId,
+            $bookId
+        );
+    }
+
+    public function detachBookFromCollection(
+        int $bookId,
+        int $collectionId
+    ): void {
+        $this->ensureOwnBook($bookId);
+        $this->ensureOwnCollection($collectionId);
+
+        $this->attachmentRepository->detachBookFromCollection(
+            $collectionId,
+            $bookId
+        );
+    }
+
+    private function ensureOwnBook(int $bookId): void
+    {
+        $this->ensureOwnModel(Book::class, $bookId);
+    }
+
+    private function ensureOwnBooks(array $bookIds): void
+    {
+        $this->ensureOwnModels(Book::class, $bookIds);
     }
 }

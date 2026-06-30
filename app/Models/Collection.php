@@ -10,6 +10,7 @@ use App\Models\Attachment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Movie;
+use App\Models\Book;
 
 class Collection extends Model
 {
@@ -127,5 +128,16 @@ class Collection extends Model
     public function isLikedBy(?\App\Models\User $user): bool
     {
         return $this->likedBy($user);
+    }
+    public function attachedBooks()
+    {
+        return $this->morphedByMany(
+            Book::class,
+            'attachable',
+            'attachments',
+            'container_id',
+            'attachable_id'
+        )->wherePivot('container_type', 'collection')
+            ->wherePivot('attachable_type', 'book');
     }
 }

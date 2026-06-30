@@ -77,21 +77,22 @@ class WorkspaceRepository
 
     private function makeUniqueCopyName(string $name, int $userId): string
     {
-        $baseName = trim($name) . ' - Copy';
-        $newName = $baseName;
+        $baseName = preg_replace('/ - Copy( \d+)?$/', '', $name);
+
+        $copyName = $baseName . ' - Copy';
         $counter = 2;
 
         while (
-            Workspace::query()
+            \App\Models\Workspace::query()
             ->where('user_id', $userId)
-            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($newName))])
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($copyName))])
             ->exists()
         ) {
-            $newName = $baseName . ' ' . $counter;
+            $copyName = $baseName . ' - Copy ' . $counter;
             $counter++;
         }
 
-        return $newName;
+        return $copyName;
     }
     public function paginateByUser(
         int $userId,
@@ -106,7 +107,8 @@ class WorkspaceRepository
                 'shares',
                 'collections as collections_count',
                 'attachedMovies as movies_count',
-                'likes'
+                'likes',
+                'attachedBooks as books_count',
             ])
             ->when(
                 $search,
@@ -141,14 +143,16 @@ class WorkspaceRepository
                 $query->where('user_id', $userId)
                     ->where(function ($query) {
                         $query->whereHas('collections')
-                            ->orWhereHas('attachedMovies');
+                            ->orWhereHas('attachedMovies')
+                            ->orWhereHas('attachedBooks');
                     });
                 break;
 
             case 'unattached':
                 $query->where('user_id', $userId)
                     ->whereDoesntHave('collections')
-                    ->whereDoesntHave('attachedMovies');
+                    ->whereDoesntHave('attachedMovies')
+                    ->whereDoesntHave('attachedBooks');
                 break;
 
             case 'recent':

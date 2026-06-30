@@ -61,7 +61,7 @@
                     </td>
                     {{-- Books --}}
                     <td class="p-3 text-center">
-                        0
+                        {{ $workspace->books_count ?? 0 }}
                     </td>
                     {{-- Status --}}
                     <td class="p-3">

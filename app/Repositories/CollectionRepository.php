@@ -74,21 +74,22 @@ class CollectionRepository
 
     private function makeUniqueCopyName(string $name, int $userId): string
     {
-        $baseName = trim($name) . ' - Copy';
-        $newName = $baseName;
+        $baseName = preg_replace('/ - Copy( \d+)?$/', '', $name);
+
+        $copyName = $baseName . ' - Copy';
         $counter = 2;
 
         while (
-            Collection::query()
+            \App\Models\Collection::query()
             ->where('user_id', $userId)
-            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($newName))])
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($copyName))])
             ->exists()
         ) {
-            $newName = $baseName . ' ' . $counter;
+            $copyName = $baseName . ' - Copy ' . $counter;
             $counter++;
         }
 
-        return $newName;
+        return $copyName;
     }
     public function paginateByUser(
         int $userId,
@@ -103,7 +104,8 @@ class CollectionRepository
                 'shares',
                 'attachedWorkspaces as workspaces_count',
                 'attachedMovies as movies_count',
-                'likes'
+                'likes',
+                'attachedBooks as books_count',
             ])
             ->when(
                 $search,
@@ -137,14 +139,16 @@ class CollectionRepository
                 $query->where('user_id', $userId)
                     ->where(function ($query) {
                         $query->whereHas('attachedWorkspaces')
-                            ->orWhereHas('attachedMovies');
+                            ->orWhereHas('attachedMovies')
+                            ->orWhereHas('attachedBooks');
                     });
                 break;
 
             case 'unattached':
                 $query->where('user_id', $userId)
                     ->whereDoesntHave('attachedWorkspaces')
-                    ->whereDoesntHave('attachedMovies');
+                    ->whereDoesntHave('attachedMovies')
+                    ->whereDoesntHave('attachedBooks');
                 break;
 
             case 'recent':

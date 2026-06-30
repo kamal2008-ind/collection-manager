@@ -26,32 +26,38 @@
                     Item Type
                 </label>
 
-                <select
-                    wire:model.live="addItemsType"
-                    class="w-full rounded-lg border-gray-300 focus:border-green-600 focus:ring-green-600"
-                >
+                <select wire:model.live="addItemsType"
+                    class="w-full rounded-lg border-gray-300 focus:border-green-600 focus:ring-green-600">
                     <option value="collections">Collections</option>
                     <option value="movies">Movies</option>
+                    <option value="books">Books</option>
                 </select>
             </div>
 
             @php
                 $isMovieType = $addItemsType === 'movies';
+                $isBookType = $addItemsType === 'books';
 
-                $itemOptions = $isMovieType
-                    ? collect($movieOptions ?? [])
-                    : collect($collectionOptions ?? []);
+                $itemOptions = $isBookType
+                    ? collect($bookOptions ?? [])
+                    : ($isMovieType
+                        ? collect($movieOptions ?? [])
+                        : collect($collectionOptions ?? []));
 
-                $addedItemIds = $isMovieType
-                    ? ($addedMovieIds ?? [])
-                    : ($addedCollectionIds ?? []);
+                $addedItemIds = $isBookType
+                    ? $addedBookIds ?? []
+                    : ($isMovieType
+                        ? $addedMovieIds ?? []
+                        : $addedCollectionIds ?? []);
 
-                $searchValue = $isMovieType
-                    ? ($movieSearch ?? '')
-                    : ($collectionSearch ?? '');
+                $searchValue = $isBookType
+                    ? $bookSearch ?? ''
+                    : ($isMovieType
+                        ? $movieSearch ?? ''
+                        : $collectionSearch ?? '');
 
-                $itemLabel = $isMovieType ? 'Movies' : 'Collections';
-                $itemLabelSingular = $isMovieType ? 'movie' : 'collection';
+                $itemLabel = $isBookType ? 'Books' : ($isMovieType ? 'Movies' : 'Collections');
+                $itemLabelSingular = $isBookType ? 'book' : ($isMovieType ? 'movie' : 'collection');
 
                 $availableItems = $itemOptions
                     ->whereNotIn('id', $addedItemIds)
@@ -66,9 +72,11 @@
                 $visibleItems = $availableItems->take($drawerPerPage);
                 $hasMoreItems = $availableItems->count() > $drawerPerPage;
 
-                $selectedCount = $isMovieType
-                    ? count($selectedMovieIds ?? [])
-                    : count($selectedCollectionIds ?? []);
+                $selectedCount = $isBookType
+                    ? count($selectedBookIds ?? [])
+                    : ($isMovieType
+                        ? count($selectedMovieIds ?? [])
+                        : count($selectedCollectionIds ?? []));
 
                 $disableAddItems = $availableItems->isEmpty();
             @endphp
@@ -79,39 +87,39 @@
                 </h3>
 
                 <div class="relative mb-3">
-                    @if ($isMovieType)
-                        <input
-                            type="text"
-                            wire:model.live.debounce.300ms="movieSearch"
+                    @if ($isBookType)
+                        <input type="text" wire:model.live.debounce.300ms="bookSearch"
+                            placeholder="Search available books..."
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600" />
+
+                        @if ($bookSearch)
+                            <button type="button" wire:click="$set('bookSearch', '')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                title="Clear search">
+                                ✕
+                            </button>
+                        @endif
+                    @elseif ($isMovieType)
+                        <input type="text" wire:model.live.debounce.300ms="movieSearch"
                             placeholder="Search available movies..."
-                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600"
-                        />
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600" />
 
                         @if ($movieSearch)
-                            <button
-                                type="button"
-                                wire:click="$set('movieSearch', '')"
+                            <button type="button" wire:click="$set('movieSearch', '')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                                title="Clear search"
-                            >
+                                title="Clear search">
                                 ✕
                             </button>
                         @endif
                     @else
-                        <input
-                            type="text"
-                            wire:model.live.debounce.300ms="collectionSearch"
+                        <input type="text" wire:model.live.debounce.300ms="collectionSearch"
                             placeholder="Search available collections..."
-                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600"
-                        />
+                            class="w-full rounded-lg border-gray-300 pr-10 focus:border-green-600 focus:ring-green-600" />
 
                         @if ($collectionSearch)
-                            <button
-                                type="button"
-                                wire:click="$set('collectionSearch', '')"
+                            <button type="button" wire:click="$set('collectionSearch', '')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                                title="Clear search"
-                            >
+                                title="Clear search">
                                 ✕
                             </button>
                         @endif
@@ -121,24 +129,17 @@
                 @if ($availableItems->isNotEmpty())
                     <div class="overflow-hidden rounded-lg border bg-white">
                         @foreach ($visibleItems as $item)
-                            <label
-                                wire:key="available-{{ $addItemsType }}-{{ $item['id'] }}"
-                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50"
-                            >
-                                @if ($isMovieType)
-                                    <input
-                                        type="checkbox"
-                                        value="{{ $item['id'] }}"
-                                        wire:model.live="selectedMovieIds"
-                                        class="rounded border-gray-400"
-                                    >
+                            <label wire:key="available-{{ $addItemsType }}-{{ $item['id'] }}"
+                                class="flex cursor-pointer items-center gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-gray-50">
+                                @if ($isBookType)
+                                    <input type="checkbox" value="{{ $item['id'] }}" wire:model.live="selectedBookIds"
+                                        class="rounded border-gray-400">
+                                @elseif ($isMovieType)
+                                    <input type="checkbox" value="{{ $item['id'] }}"
+                                        wire:model.live="selectedMovieIds" class="rounded border-gray-400">
                                 @else
-                                    <input
-                                        type="checkbox"
-                                        value="{{ $item['id'] }}"
-                                        wire:model.live="selectedCollectionIds"
-                                        class="rounded border-gray-400"
-                                    >
+                                    <input type="checkbox" value="{{ $item['id'] }}"
+                                        wire:model.live="selectedCollectionIds" class="rounded border-gray-400">
                                 @endif
 
                                 <span class="font-medium">
@@ -160,7 +161,7 @@
                         </div>
                     @endif
 
-                    @if (! $hasMoreItems && $visibleItems->isNotEmpty())
+                    @if (!$hasMoreItems && $visibleItems->isNotEmpty())
                         <div class="py-4 text-center text-sm text-gray-400">
                             ✓ No more {{ strtolower($itemLabel) }}
                         </div>
@@ -178,12 +179,8 @@
                 Cancel
             </x-ui.button>
 
-            <x-ui.button
-                variant="success"
-                wire:click="addSelectedItems"
-                :disabled="$disableAddItems"
-                class="bg-green-600 hover:bg-green-700"
-            >
+            <x-ui.button variant="success" wire:click="addSelectedItems" :disabled="$disableAddItems"
+                class="bg-green-600 hover:bg-green-700">
                 Add Items
                 @if ($selectedCount)
                     ({{ $selectedCount }})

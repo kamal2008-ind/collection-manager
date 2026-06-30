@@ -3,7 +3,7 @@
         <thead class="bg-gray-50">
             <tr>
                 <th class="p-3 text-left"></th>
-                <th class="p-3 text-left w-[28%]">Movie</th>
+                <th class="p-3 text-left w-[28%]">Book</th>
                 <th class="p-3 text-center w-[12%]">Owner</th>
                 <th class="p-3 text-center w-[10%]">Year</th>
                 <th class="p-3 text-center w-[12%]">TMDb</th>
@@ -14,24 +14,24 @@
         </thead>
 
         <tbody>
-            @forelse($movies as $movie)
+            @forelse($books as $book)
                 @php
-                    $isOwner = auth()->id() === $movie->user_id;
-                    $movieUrl = url('/u/' . $movie->user->username . '/movies/' . $movie->slug);
+                    $isOwner = auth()->id() === $book->user_id;
+                    $bookUrl = url('/u/' . $book->user->username . '/books/' . $book->slug);
                 @endphp
 
-                <tr wire:key="movie-table-{{ $movie->id }}" class="border-t hover:bg-gray-50">
+                <tr wire:key="book-table-{{ $book->id }}" class="border-t hover:bg-gray-50">
                     <td class="p-3">
                         @if ($isOwner)
-                            <input type="checkbox" value="{{ $movie->id }}" wire:model.live="selected">
+                            <input type="checkbox" value="{{ $book->id }}" wire:model.live="selected">
                         @endif
                     </td>
 
-                    <td class="p-3 font-medium" title="{{ $movie->title }}">
+                    <td class="p-3 font-medium" title="{{ $book->title }}">
                         <div class="flex items-center gap-3">
-                            @if ($movie->poster_path)
-                                <img src="{{ asset('storage/' . $movie->poster_path) }}"
-                                    class="h-10 w-10 rounded object-cover border" alt="{{ $movie->title }}">
+                            @if ($book->poster_path)
+                                <img src="{{ asset('storage/' . $book->poster_path) }}"
+                                    class="h-10 w-10 rounded object-cover border" alt="{{ $book->title }}">
                             @else
                                 <div class="flex h-10 w-10 items-center justify-center rounded border bg-gray-50">
                                     🎬
@@ -39,33 +39,33 @@
                             @endif
 
                             <span class="truncate max-w-[220px]">
-                                {{ $movie->title }}
+                                {{ $book->title }}
                             </span>
                         </div>
                     </td>
 
                     <td class="p-3 text-center">
-                        <x-owner-badge :userid="$movie->user_id" :username="$movie->user->username" :view="$view" />
+                        <x-owner-badge :userid="$book->user_id" :username="$book->user->username" :view="$view" />
                     </td>
 
                     <td class="p-3 text-center">
-                        {{ $movie->year ?: '—' }}
+                        {{ $book->year ?: '—' }}
                     </td>
 
                     <td class="p-3 text-center">
-                        {{ $movie->tmdb_id ?: '—' }}
+                        {{ $book->tmdb_id ?: '—' }}
                     </td>
 
                     <td class="p-3 text-center">
-                        {{ $movie->imdb_id ?: '—' }}
+                        {{ $book->imdb_id ?: '—' }}
                     </td>
 
                     <td class="p-3">
                         <div class="flex items-center justify-center gap-3">
-                            <x-status-badge :visibility="$movie->visibility" :shared="($movie->shares_count ?? 0) > 0" :view="$view" />
+                            <x-status-badge :visibility="$book->visibility" :shared="($book->shares_count ?? 0) > 0" :view="$view" />
 
-                            <x-card-footer-meta :visibility="$movie->visibility" :assetId="$movie->id" :isOwner="$isOwner" :likeCount="$movie->likes_count ?? 0"
-                                :likedByUser="$movie->isLikedBy(auth()->user())" :shareCount="$movie->shares_count" :assetUrl="$movieUrl" />
+                            <x-card-footer-meta :visibility="$book->visibility" :assetId="$book->id" :isOwner="$isOwner" :likeCount="$book->likes_count ?? 0"
+                                :likedByUser="$book->isLikedBy(auth()->user())" :shareCount="$book->shares_count" :assetUrl="$bookUrl" />
                         </div>
                     </td>
 
@@ -73,41 +73,41 @@
                         <div class="flex justify-end items-center gap-3">
 
                             @if ($isOwner)
-                                <button title="{{ $movie->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
-                                    wire:click="toggleFavorite({{ $movie->id }})">
-                                    @if ($movie->is_favorite)
+                                <button title="{{ $book->is_favorite ? 'Remove Favorite' : 'Add Favorite' }}"
+                                    wire:click="toggleFavorite({{ $book->id }})">
+                                    @if ($book->is_favorite)
                                         ⭐
                                     @else
                                         <span class="text-2xl">☆</span>
                                     @endif
                                 </button>
 
-                                <button title="Edit" wire:click="editMovie({{ $movie->id }})">
+                                <button title="Edit" wire:click="editBook({{ $book->id }})">
                                     ✏️
                                 </button>
 
-                                <button title="Move to Trash" wire:click="confirmDelete({{ $movie->id }})">
+                                <button title="Move to Trash" wire:click="confirmDelete({{ $book->id }})">
                                     🗑️
                                 </button>
 
                                 <div class="relative">
                                     <button type="button"
-                                        @click.stop="activeMenu = activeMenu === 'movie-{{ $movie->id }}' ? null : 'movie-{{ $movie->id }}'"
+                                        @click.stop="activeMenu = activeMenu === 'book-{{ $book->id }}' ? null : 'book-{{ $book->id }}'"
                                         class="rounded p-1 hover:bg-gray-100" title="More actions">
                                         ⋮
                                     </button>
 
-                                    <div x-show="activeMenu === 'movie-{{ $movie->id }}'"
+                                    <div x-show="activeMenu === 'book-{{ $book->id }}'"
                                         @click.outside="activeMenu = null" x-transition
                                         class="absolute right-0 z-[9999] mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
 
-                                        <button type="button" wire:click="openAttachToDrawer({{ $movie->id }})"
+                                        <button type="button" wire:click="openAttachToDrawer({{ $book->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>📎</span>
                                             <span>Attach To</span>
                                         </button>
 
-                                        <button type="button" wire:click="openDetachFromDrawer({{ $movie->id }})"
+                                        <button type="button" wire:click="openDetachFromDrawer({{ $book->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>⛓️‍💥</span>
                                             <span>Detach From</span>
@@ -115,19 +115,19 @@
 
                                         <div class="my-1 border-t"></div>
 
-                                        <button type="button" wire:click="copyMovieUrl({{ $movie->id }})"
+                                        <button type="button" wire:click="copyBookUrl({{ $book->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>🔗</span>
                                             <span>Copy link</span>
                                         </button>
 
-                                        <button type="button" wire:click="movieStatistics({{ $movie->id }})"
+                                        <button type="button" wire:click="bookStatistics({{ $book->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>📊</span>
                                             <span>Statistics</span>
                                         </button>
 
-                                        <button type="button" wire:click="movieSettings({{ $movie->id }})"
+                                        <button type="button" wire:click="bookSettings({{ $book->id }})"
                                             class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50">
                                             <span>⚙️</span>
                                             <span>Settings</span>
@@ -145,8 +145,8 @@
             @empty
                 <tr>
                     <td colspan="8" class="p-6 text-center">
-                        <x-empty-state icon="🎬" title="No movies found"
-                            message="Try changing your search/filter/access mode or create a new movie." />
+                        <x-empty-state icon="🎬" title="No books found"
+                            message="Try changing your search/filter/access mode or create a new book." />
                     </td>
                 </tr>
             @endforelse

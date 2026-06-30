@@ -94,7 +94,7 @@
             🎬 Movies ({{ $workspace->movies_count ?? 0 }})
         </div>
         <div>
-            📘 Books (0)
+            📘 Books ({{ $workspace->books_count ?? 0 }})
         </div>
     </div>
 
